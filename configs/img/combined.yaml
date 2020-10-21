@@ -1,0 +1,73 @@
+method: combined
+data:
+  # path: /home/wenjing/storage/data/ShapeNet
+  img_folder: img_choy2016
+  img_size: 224 
+  points_subsample: 2048 
+
+  multiclass: True
+  path: data/ShapeNet
+  base_mesh: im2mesh/pix2mesh/ellipsoid/face3.obj
+  ellipsoid: im2mesh/pix2mesh/ellipsoid/info_ellipsoid.dat
+  # img_folder: img_choy2016
+  # img_size: 224 
+  img_with_camera: true
+  with_transforms: true
+  pointcloud_target_n: 8000
+model:
+  encoder_latent: null
+  decoder: cbatchnorm
+  encoder: resnet18
+  c_dim: 256
+  z_dim: 0
+
+  encoder_latent: simple
+  decoder: simple
+  encoder: pixel2mesh_cond
+  encoder_kwargs: {}
+  decoder_kwargs:
+    adjust_ellipsoid: True
+  hidden_dim: 192
+  feat_dim: 963
+  c_dim: 512
+  z_dim: 64
+  adjust_losses: True
+training:
+  out_dir1:  out/img/onet
+  batch_size: 64
+  model_selection_metric: iou
+  model_selection_mode: maximize
+  visualize_every: 20000
+  validate_every: 20000
+
+  out_dir2:  out/img/pixel2mesh
+  batch_size: 12
+  print_every: 40
+  visualize_every: 10000
+  checkpoint_every: 1000
+  validate_every: 2000
+  model_selection_metric: chamfer
+test:
+  threshold: 0.2
+  eval_mesh: true
+  eval_pointcloud: false
+
+  threshold: 0.9
+  eval_mesh: true
+  eval_pointcloud: false
+
+  model_file1: model_best.pt
+  model_file2: model_best.pt
+generation:
+  batch_size: 100000
+  refine: false
+  n_x: 128
+  n_z: 1
+  resolution_0: 32 
+  upsampling_steps: 2
+
+  # batch_size: 100000
+  generate_mesh: true
+  generate_pointcloud: false
+
+
