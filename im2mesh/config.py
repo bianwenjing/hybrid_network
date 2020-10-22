@@ -91,7 +91,7 @@ def get_model2(cfg, device=None, dataset=None):
     #     cfg, device=device, dataset=dataset)
     model1 = method_dict['onet'].config.get_model(
         cfg, device=device, dataset=dataset)
-    model2 = method_dict['pixel2mesh'].config.get_model(
+    model2 = method_dict['pix2mesh'].config.get_model(
         cfg, device=device, dataset=dataset)
     return model1, model2
 #########################################################
@@ -133,7 +133,7 @@ def get_generator2(model1, model2, cfg, device):
         device (device): pytorch device
     '''
     method = cfg['method']
-    generator = method_dict[method].config.get_generator(model1, model2, device)
+    generator = method_dict[method].config.get_generator(model1, model2, cfg, device)
     return generator
 
 # Datasets

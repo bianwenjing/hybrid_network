@@ -46,7 +46,7 @@ model1, model2 = config.get_model2(cfg, device=device, dataset=dataset)
 checkpoint_io = CheckpointIO(out_dir1, model=model1)
 checkpoint_io.load(cfg['test']['model_file1'])
 
-checkpoint_io2 = CheckpointIO(out_dir2, model=model1)
+checkpoint_io2 = CheckpointIO(out_dir2, model=model2)
 checkpoint_io2.load(cfg['test']['model_file2'])
 # Generator
 generator = config.get_generator2(model1, model2, cfg, device=device)

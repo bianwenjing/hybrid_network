@@ -25,7 +25,7 @@ model:
   encoder2: pixel2mesh_cond
   encoder_kwargs2: {}
   decoder_kwargs2:
-    adjust_ellipsoid2: True
+    adjust_ellipsoid: True
   hidden_dim2: 192
   feat_dim2: 963
   c_dim2: 512
