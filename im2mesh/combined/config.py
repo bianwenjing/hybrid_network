@@ -6,7 +6,7 @@ from im2mesh.encoder import encoder_dict
 from im2mesh.combined import models, training, generation
 from im2mesh import data
 from im2mesh import config
-
+import numpy as np
 
 # def get_model(cfg, device=None, dataset=None, **kwargs):
 #     ''' Return the Occupancy Network model.
@@ -55,8 +55,8 @@ from im2mesh import config
 #     )
 #
 #     return model
-#
-#
+
+
 # def get_trainer(model, optimizer, cfg, device, **kwargs):
 #     ''' Returns the trainer object.
 #
@@ -91,8 +91,9 @@ def get_generator(model_in, model_ex, cfg, device, **kwargs):
     '''
     # preprocessor = config.get_preprocessor(cfg, device=device)
     preprocessor = None
+    base_mesh = np.loadtxt(cfg['data']['base_mesh'], dtype='|S32')
     generator = generation.Generator3D(
-        model_in, model_ex,
+        model_in, model_ex, base_mesh,
         device=device,
         threshold=cfg['test']['threshold'],
         resolution0=cfg['generation']['resolution_0'],
@@ -121,33 +122,44 @@ def get_generator(model_in, model_ex, cfg, device, **kwargs):
 #     return p0_z
 #
 #
-# def get_data_fields(mode, cfg):
-#     ''' Returns the data fields.
-#
-#     Args:
-#         mode (str): the mode which is used
-#         cfg (dict): imported yaml config
-#     '''
-#     points_transform = data.SubsamplePoints(cfg['data']['points_subsample'])
-#     with_transforms = cfg['model']['use_camera']
-#
-#     fields = {}
-#     fields['points'] = data.PointsField(
-#         cfg['data']['points_file'], points_transform,
-#         with_transforms=with_transforms,
-#         unpackbits=cfg['data']['points_unpackbits'],
-#     )
-#
-#     if mode in ('val', 'test'):
-#         points_iou_file = cfg['data']['points_iou_file']
-#         voxels_file = cfg['data']['voxels_file']
-#         if points_iou_file is not None:
-#             fields['points_iou'] = data.PointsField(
-#                 points_iou_file,
-#                 with_transforms=with_transforms,
-#                 unpackbits=cfg['data']['points_unpackbits'],
-#             )
-#         if voxels_file is not None:
-#             fields['voxels'] = data.VoxelsField(voxels_file)
-#
-#     return fields
+def get_data_fields(mode, cfg):
+    ''' Returns the data fields.
+
+    Args:
+        mode (str): the mode which is used
+        cfg (dict): imported yaml config
+    '''
+
+    points_transform = data.SubsamplePoints(cfg['data']['points_subsample'])
+    with_transforms = cfg['model']['use_camera']
+
+    fields = {}
+    fields['points'] = data.PointsField(
+        cfg['data']['points_file'], points_transform,
+        with_transforms=with_transforms,
+        unpackbits=cfg['data']['points_unpackbits'],
+    )
+
+    if mode in ('val', 'test'):
+        points_iou_file = cfg['data']['points_iou_file']
+        voxels_file = cfg['data']['voxels_file']
+        if points_iou_file is not None:
+            fields['points_iou'] = data.PointsField(
+                points_iou_file,
+                with_transforms=with_transforms,
+                unpackbits=cfg['data']['points_unpackbits'],
+            )
+        if voxels_file is not None:
+            fields['voxels'] = data.VoxelsField(voxels_file)
+######################################################################
+    #pixel2mesh
+
+    with_transforms = cfg['data']['with_transforms']
+    pointcloud_transform = data.SubsamplePointcloud(
+        cfg['data']['pointcloud_target_n'])
+    # fields = {}
+    fields['pointcloud'] = data.PointCloudField(
+        cfg['data']['pointcloud_file'], pointcloud_transform,
+        with_transforms=with_transforms)
+
+    return fields

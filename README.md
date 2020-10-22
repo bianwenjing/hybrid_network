@@ -1,4 +1,4 @@
-# Occupancy Networks
+# Hybrid Network
 ![Example 1](img/00.gif)
 ![Example 2](img/01.gif)
 ![Example 3](img/02.gif)

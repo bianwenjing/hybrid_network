@@ -23,6 +23,7 @@ model:
   adjust_losses: True
 training:
   out_dir:  out/img/pixel2mesh
+#  out_dir: /home/wenjing/storage/onet
   batch_size: 12
   print_every: 40
   visualize_every: 10000

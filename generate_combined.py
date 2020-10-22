@@ -24,8 +24,9 @@ cfg = config.load_config(args.config, 'configs/default.yaml')
 is_cuda = (torch.cuda.is_available() and not args.no_cuda)
 device = torch.device("cuda" if is_cuda else "cpu")
 
-out_dir1 = cfg['training']['out_dir1']
-out_dir2 = cfg['training']['out_dir2']
+out_dir = cfg['training']['out_dir']  # combined
+out_dir1 = cfg['training']['out_dir1'] # onet
+out_dir2 = cfg['training']['out_dir2']  # pixel2mesh
 generation_dir = os.path.join(out_dir, cfg['generation']['generation_dir'])
 out_time_file = os.path.join(generation_dir, 'time_generation_full.pkl')
 out_time_file_class = os.path.join(generation_dir, 'time_generation.pkl')
@@ -70,8 +71,8 @@ test_loader = torch.utils.data.DataLoader(
 time_dicts = []
 
 # Generate
-model.eval()
-
+model1.eval()
+model2.eval()
 # Count how many models already created
 model_counter = defaultdict(int)
 

@@ -13,12 +13,12 @@ def get_model(cfg, device=None, **kwargs):
         cfg (yaml file): config file
         device (PyTorch device): PyTorch device
     '''
-    decoder = cfg['model']['decoder']
-    encoder = cfg['model']['encoder']
-    feat_dim = cfg['model']['feat_dim']
-    hidden_dim = cfg['model']['hidden_dim']
-    decoder_kwargs = cfg['model']['decoder_kwargs']
-    encoder_kwargs = cfg['model']['encoder_kwargs']
+    decoder = cfg['model']['decoder2']
+    encoder = cfg['model']['encoder2']
+    feat_dim = cfg['model']['feat_dim2']
+    hidden_dim = cfg['model']['hidden_dim2']
+    decoder_kwargs = cfg['model']['decoder_kwargs2']
+    encoder_kwargs = cfg['model']['encoder_kwargs2']
     # Encoding necessary due to python2 pickle to python3 pickle convert
     ellipsoid = pickle.load(
         open(cfg['data']['ellipsoid'], 'rb'), encoding='latin1')
@@ -46,9 +46,9 @@ def get_trainer(model, optimizer, cfg, device):
         cfg (yaml file): config file
         device (PyTorch device): The PyTorch device that should be used
     '''
-    out_dir = cfg['training']['out_dir']
+    out_dir = cfg['training']['out_dir2']
     vis_dir = os.path.join(out_dir, 'vis')
-    adjust_losses = cfg['model']['adjust_losses']
+    adjust_losses = cfg['model']['adjust_losses2']
     # Encoding necessary due to python2 pickle to python3 pickle convert
     ellipsoid = pickle.load(
         open(cfg['data']['ellipsoid'], 'rb'), encoding='latin1')

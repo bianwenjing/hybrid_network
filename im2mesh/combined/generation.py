@@ -31,7 +31,7 @@ class Generator3D(object):
         preprocessor (nn.Module): preprocessor for inputs
     '''
 
-    def __init__(self, model, model_ex, points_batch_size=100000,
+    def __init__(self, model, model_ex, base_mesh, points_batch_size=100000,
                  threshold=0.5, refinement_step=0, device=None,
                  resolution0=16, upsampling_steps=3,
                  with_normals=False, padding=0.1, sample=False,
@@ -50,6 +50,7 @@ class Generator3D(object):
         self.sample = sample
         self.simplify_nfaces = simplify_nfaces
         self.preprocessor = preprocessor
+        self.base_mesh = base_mesh
 
     def generate_mesh(self, data, return_stats=True):
         ''' Generates the output mesh.
@@ -69,6 +70,13 @@ class Generator3D(object):
             data, 'pointcloud.loc', 'pointcloud.scale', device=self.device)
 
         world_mat, camera_mat = camera_args['Rt'], camera_args['K']
+        with torch.no_grad():
+            outputs1, outputs2 = self.model_ex(img, camera_mat)
+            out_1, out_2, out_3 = outputs1
+
+        transformed_pred = common.transform_points_back(out_3, world_mat)
+        vertices = transformed_pred.squeeze().cpu().numpy()
+
 
         ##################################################################
         kwargs = {}
@@ -88,7 +96,7 @@ class Generator3D(object):
 
         z = self.model_in.get_z_from_prior((1,), sample=self.sample).to(device)
         ###########################################################
-        mesh = self.generate_from_latent(z, c, stats_dict=stats_dict, **kwargs)
+        mesh = self.generate_from_latent(z, c, vertices, stats_dict=stats_dict, **kwargs)
         ######################################################################
 
         if return_stats:
@@ -96,7 +104,7 @@ class Generator3D(object):
         else:
             return mesh
 
-    def generate_from_latent(self, z, c=None, stats_dict={}, **kwargs):
+    def generate_from_latent(self, z, c=None, vertices=None, stats_dict={}, **kwargs):
         ''' Generates mesh from latent.
 
         Args:
@@ -104,21 +112,18 @@ class Generator3D(object):
             c (tensor): latent conditioned code c
             stats_dict (dict): stats dictionary
         '''
-        threshold = np.log(self.threshold) - np.log(1. - self.threshold)
-
-        t0 = time.time()
-        # Compute bounding box size
-        box_size = 1 + self.padding
-
+        # threshold = np.log(self.threshold) - np.log(1. - self.threshold)
+        #
+        # t0 = time.time()
+        # # Compute bounding box size
+        # box_size = 1 + self.padding
 ###############################################################################
+        # while values >
+        for i in range(10):
+            values = self.eval_points(vertices, z, c, **kwargs).cpu().numpy()
+            normals = self.estimate_normals(vertices, z, c)
+            vertices = vertices - normals*values
 
-
-        with torch.no_grad():
-            outputs1, outputs2 = self.model(img, camera_mat)
-            out_1, out_2, out_3 = outputs1
-
-        transformed_pred = common.transform_points_back(out_3, world_mat)
-        vertices = transformed_pred.squeeze().cpu().numpy()
 ############################################################################
         # # Shortcut
         # if self.upsampling_steps == 0:
@@ -153,8 +158,9 @@ class Generator3D(object):
         # stats_dict['time (eval points)'] = time.time() - t0
         # mesh = self.extract_mesh(value_grid, z, c, stats_dict=stats_dict)
         ############################################################################
-
-        mesh = trimesh.Trimesh(vertices, triangles,
+        faces = self.base_mesh[:, 1:]  # remove the f's in the first column
+        faces = faces.astype(int) - 1  # To adjust indices to trimesh notation
+        mesh = trimesh.Trimesh(vertices, faces,
                                vertex_normals=normals,
                                process=False)
         return mesh
@@ -267,7 +273,7 @@ class Generator3D(object):
             out = occ_hat.sum()
             out.backward()
             ni = -vi.grad
-            ni = ni / torch.norm(ni, dim=-1, keepdim=True)
+            # ni = ni / torch.norm(ni, dim=-1, keepdim=True)
             ni = ni.squeeze(0).cpu().numpy()
             normals.append(ni)
 
