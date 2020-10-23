@@ -108,6 +108,7 @@ class Generator3D(object):
             pointsf = box_size * make_3d_grid(
                 (-0.5,)*3, (0.5,)*3, (nx,)*3
             )
+
             ####################################
             values = self.eval_points(pointsf, z, c, **kwargs).cpu().numpy()
             value_grid = values.reshape(nx, nx, nx)
@@ -124,6 +125,7 @@ class Generator3D(object):
                 pointsf = pointsf / mesh_extractor.resolution
                 pointsf = box_size * (pointsf - 0.5)
                 # Evaluate model and update
+                # print('@@@@@@@@@@@@@', pointsf.shape)
                 values = self.eval_points(
                     pointsf, z, c, **kwargs).cpu().numpy()
                 values = values.astype(np.float64)

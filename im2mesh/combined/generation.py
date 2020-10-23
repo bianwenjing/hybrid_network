@@ -75,7 +75,7 @@ class Generator3D(object):
             out_1, out_2, out_3 = outputs1
 
         transformed_pred = common.transform_points_back(out_3, world_mat)
-        vertices = transformed_pred.squeeze().cpu().numpy()
+        vertices = transformed_pred.squeeze()
 
 
         ##################################################################
@@ -120,10 +120,11 @@ class Generator3D(object):
 ###############################################################################
         # while values >
         for i in range(10):
-            values = self.eval_points(vertices, z, c, **kwargs).cpu().numpy()
-            normals = self.estimate_normals(vertices, z, c)
-            vertices = vertices - normals*values
-
+            normals, values = self.estimate_normals_oc(vertices, z, c)
+            # print('$$$$$$$$$', torch.mul(normals,values))
+            vertices = vertices - torch.mul(normals,values).permute(1,0)
+            print('#####', values)
+        normals, values = self.estimate_normals_oc(vertices, z, c)
 ############################################################################
         # # Shortcut
         # if self.upsampling_steps == 0:
@@ -160,8 +161,8 @@ class Generator3D(object):
         ############################################################################
         faces = self.base_mesh[:, 1:]  # remove the f's in the first column
         faces = faces.astype(int) - 1  # To adjust indices to trimesh notation
-        mesh = trimesh.Trimesh(vertices, faces,
-                               vertex_normals=normals,
+        mesh = trimesh.Trimesh(vertices.cpu().numpy(), faces,
+                               vertex_normals=normals.cpu().numpy(),
                                process=False)
         return mesh
 
@@ -179,7 +180,7 @@ class Generator3D(object):
         for pi in p_split:
             pi = pi.unsqueeze(0).to(self.device)
             with torch.no_grad():
-                occ_hat = self.model.decode(pi, z, c, **kwargs).logits
+                occ_hat = self.model_in.decode(pi, z, c, **kwargs).logits
 
             occ_hats.append(occ_hat.squeeze(0).detach().cpu())
 
@@ -252,7 +253,7 @@ class Generator3D(object):
 
         return mesh
 
-    def estimate_normals(self, vertices, z, c=None):
+    def estimate_normals_oc(self, vertices, z, c=None):
         ''' Estimates the normals by computing the gradient of the objective.
 
         Args:
@@ -261,24 +262,31 @@ class Generator3D(object):
             c (tensor): latent conditioned code c
         '''
         device = self.device
-        vertices = torch.FloatTensor(vertices)
         vertices_split = torch.split(vertices, self.points_batch_size)
 
         normals = []
-        z, c = z.unsqueeze(0), c.unsqueeze(0)
+        z = z.unsqueeze(0)
+        occ_hats = []
         for vi in vertices_split:
             vi = vi.unsqueeze(0).to(device)
+            # print('$$$$$$$$$4',vi.grad_fn)
             vi.requires_grad_()
-            occ_hat = self.model.decode(vi, z, c).logits
+            occ_hat = self.model_in.decode(vi, z, c).logits
+            # occ_hats.append(occ_hat.squeeze(0).detach())
+            occ_hats.append(occ_hat.squeeze(0))
             out = occ_hat.sum()
+            ##################################
             out.backward()
-            ni = -vi.grad
-            # ni = ni / torch.norm(ni, dim=-1, keepdim=True)
-            ni = ni.squeeze(0).cpu().numpy()
+            ##################################3
+            ni = vi.grad
+            # print('$$$$$$', vi.grad_fn)
+            ni = ni / torch.norm(ni, dim=-1, keepdim=True)**2
+            ni = ni.squeeze(0)
             normals.append(ni)
 
-        normals = np.concatenate(normals, axis=0)
-        return normals
+        occ_hat = torch.cat(occ_hats, dim=0).detach()
+        normals = torch.cat(normals, axis=0).permute(1,0).detach()
+        return normals, occ_hat
 
     def refine_mesh(self, mesh, occ_hat, z, c=None):
         ''' Refines the predicted mesh.
