@@ -1,7 +1,7 @@
 method: onet
 data:
   dataset: Shapes3D
-  path: /home/wenjing/Downloads/ShapeNet
+  path: /home/wenjing/Downloads/ShapeNet2
 #  path: /home/wenjing/storage/data/ShapeNet
   classes: null
   input_type: img

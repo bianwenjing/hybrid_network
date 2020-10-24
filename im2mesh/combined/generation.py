@@ -10,6 +10,7 @@ from im2mesh.utils.libsimplify import simplify_mesh
 from im2mesh.utils.libmise import MISE
 import time
 import im2mesh.common as common
+import pickle
 
 class Generator3D(object):
     '''  Generator class for Occupancy Networks.
@@ -64,6 +65,10 @@ class Generator3D(object):
         stats_dict = {}
 
         inputs = data.get('inputs', torch.empty(1, 0)).to(device)  # for onet
+        #############################################################
+        ellipsoid = pickle.load(
+            open('im2mesh/pix2mesh/ellipsoid/info_ellipsoid.dat', 'rb'), encoding='latin1')
+        initial_coordinates = torch.tensor(ellipsoid[0]).to(device)
         ###########################################################
         img = data.get('inputs').to(self.device) #pixel2mesh
         camera_args = common.get_camera_args(
@@ -119,12 +124,12 @@ class Generator3D(object):
         # box_size = 1 + self.padding
 ###############################################################################
         # while values >
-        for i in range(10):
+        for i in range(100):
             normals, values = self.estimate_normals_oc(vertices, z, c)
-            # print('$$$$$$$$$', torch.mul(normals,values))
+            # print('**********', values[abs(values) > 1].shape)
             vertices = vertices - torch.mul(normals,values).permute(1,0)
-            print('#####', values)
         normals, values = self.estimate_normals_oc(vertices, z, c)
+        print('**********', values[abs(values)>1].shape)
 ############################################################################
         # # Shortcut
         # if self.upsampling_steps == 0:
@@ -161,6 +166,8 @@ class Generator3D(object):
         ############################################################################
         faces = self.base_mesh[:, 1:]  # remove the f's in the first column
         faces = faces.astype(int) - 1  # To adjust indices to trimesh notation
+        print('@@@@@@@@2',faces)
+
         mesh = trimesh.Trimesh(vertices.cpu().numpy(), faces,
                                vertex_normals=normals.cpu().numpy(),
                                process=False)
