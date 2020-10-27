@@ -60,16 +60,8 @@ class Generator3D(object):
             data (tensor): data tensor
             return_stats (bool): whether stats should be returned
         '''
-        self.model_in.eval()
-        device = self.device
-        stats_dict = {}
 
-        inputs = data.get('inputs', torch.empty(1, 0)).to(device)  # for onet
-        #############################################################
-        ellipsoid = pickle.load(
-            open('im2mesh/pix2mesh/ellipsoid/info_ellipsoid.dat', 'rb'), encoding='latin1')
-        initial_coordinates = torch.tensor(ellipsoid[0]).to(device)
-        ###########################################################
+        ####pixel2mesh#######################################################
         img = data.get('inputs').to(self.device) #pixel2mesh
         camera_args = common.get_camera_args(
             data, 'pointcloud.loc', 'pointcloud.scale', device=self.device)
@@ -83,7 +75,12 @@ class Generator3D(object):
         vertices = transformed_pred.squeeze()
 
 
-        ##################################################################
+        #######onet###########################################################
+        self.model_in.eval()
+        device = self.device
+        stats_dict = {}
+
+        inputs = data.get('inputs', torch.empty(1, 0)).to(device)  # for onet
         kwargs = {}
 
         # Preprocess if requires
@@ -92,13 +89,13 @@ class Generator3D(object):
             with torch.no_grad():
                 inputs = self.preprocessor(inputs)
             stats_dict['time (preprocess)'] = time.time() - t0
-
-        # Encode inputs
+        #
+        # # Encode inputs
         t0 = time.time()
         with torch.no_grad():
             c = self.model_in.encode_inputs(inputs)
         stats_dict['time (encode inputs)'] = time.time() - t0
-
+        #
         z = self.model_in.get_z_from_prior((1,), sample=self.sample).to(device)
         ###########################################################
         mesh = self.generate_from_latent(z, c, vertices, stats_dict=stats_dict, **kwargs)
@@ -123,13 +120,12 @@ class Generator3D(object):
         # # Compute bounding box size
         # box_size = 1 + self.padding
 ###############################################################################
-        # while values >
-        for i in range(100):
-            normals, values = self.estimate_normals_oc(vertices, z, c)
-            # print('**********', values[abs(values) > 1].shape)
-            vertices = vertices - torch.mul(normals,values).permute(1,0)
-        normals, values = self.estimate_normals_oc(vertices, z, c)
-        print('**********', values[abs(values)>1].shape)
+        # for i in range(200):
+        #     normals, values = self.estimate_normals_oc(vertices, z, c)
+        #     # print('**********', values[abs(values) > 1].shape)
+        #     vertices = vertices - torch.mul(normals,values).permute(1,0)
+        # normals, values = self.estimate_normals_oc(vertices, z, c)
+        # print('**********', values[abs(values)>1].shape)
 ############################################################################
         # # Shortcut
         # if self.upsampling_steps == 0:
@@ -166,12 +162,25 @@ class Generator3D(object):
         ############################################################################
         faces = self.base_mesh[:, 1:]  # remove the f's in the first column
         faces = faces.astype(int) - 1  # To adjust indices to trimesh notation
-        print('@@@@@@@@2',faces)
+        # vertices, faces = self.extend_samples(vertices, faces)
 
-        mesh = trimesh.Trimesh(vertices.cpu().numpy(), faces,
-                               vertex_normals=normals.cpu().numpy(),
-                               process=False)
+        # mesh = trimesh.Trimesh(vertices.cpu().numpy(), faces,
+        #                        vertex_normals=normals.cpu().numpy(),
+        #                        process=False)
+        mesh = trimesh.Trimesh(vertices=vertices.cpu().numpy(), faces=faces, process=False)
         return mesh
+
+    def extend_samples(self, vertices, faces):
+        print('$$$$$$$4', vertices)
+        print('@@@@@', faces)
+        ver2 = []
+        for face in faces:
+            ver2.append((vertices[face[0]]+vertices[face[1]])/2)
+            ver2.append((vertices[face[0]]+vertices[face[2]])/2)
+            ver2.append((vertices[face[2]]+vertices[face[1]])/2)
+            print('########', ver2)
+            print(ver2.shape)
+        return vertices, faces
 
     def eval_points(self, p, z, c=None, **kwargs):
         ''' Evaluates the occupancy values for the points.
@@ -235,12 +244,11 @@ class Generator3D(object):
         else:
             normals = None
 
-        # Create mesh
-        # print('!!!!!!', len(vertices))
-        # print('%%%%%', triangles)
+
         mesh = trimesh.Trimesh(vertices, triangles,
                                vertex_normals=normals,
                                process=False)
+
 
         # Directly return if mesh is empty
         if vertices.shape[0] == 0:

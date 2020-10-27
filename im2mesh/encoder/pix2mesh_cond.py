@@ -49,6 +49,8 @@ class Pix2mesh_Cond(nn.Module):
             nn.Conv2d(num_fm*32, num_fm*32, 3, stride=1, padding=1), actvn,
             nn.Conv2d(num_fm*32, num_fm*32, 3, stride=1, padding=1), actvn,
         )
+        for  p in self.parameters():
+             p.requires_grad = False
 
     def forward(self, x):
         # x has size 224 x 224

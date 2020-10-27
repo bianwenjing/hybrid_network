@@ -74,7 +74,8 @@ model = config.get_model(cfg, device=device, dataset=train_dataset)
 
 # Intialize training
 npoints = 1000
-optimizer = optim.Adam(model.parameters(), lr=1e-4)
+# optimizer = optim.Adam(model.parameters(), lr=1e-5)
+optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-5)
 # optimizer = optim.SGD(model.parameters(), lr=1e-4, momentum=0.9)
 trainer = config.get_trainer(model, optimizer, cfg, device=device)
 
@@ -83,6 +84,15 @@ try:
     load_dict = checkpoint_io.load('model.pt')
 except FileExistsError:
     load_dict = dict()
+# try:
+#     load_dict = checkpoint_io.load('model.pt')
+# except FileExistsError:
+#     pass
+# try:
+#     load_dict = checkpoint_io.load('encoder.pt')
+# except FileExistsError:
+#     load_dict = dict()
+
 epoch_it = load_dict.get('epoch_it', -1)
 it = load_dict.get('it', -1)
 metric_val_best = load_dict.get(
