@@ -25,8 +25,8 @@ is_cuda = (torch.cuda.is_available() and not args.no_cuda)
 device = torch.device("cuda" if is_cuda else "cpu")
 
 out_dir = cfg['training']['out_dir']  # combined
-out_dir1 = cfg['training']['out_dir1'] # onet
-out_dir2 = cfg['training']['out_dir2']  # pixel2mesh
+# out_dir1 = cfg['training']['out_dir1'] # onet
+# out_dir2 = cfg['training']['out_dir2']  # pixel2mesh
 generation_dir = os.path.join(out_dir, cfg['generation']['generation_dir'])
 out_time_file = os.path.join(generation_dir, 'time_generation_full.pkl')
 out_time_file_class = os.path.join(generation_dir, 'time_generation.pkl')
@@ -43,10 +43,10 @@ dataset = config.get_dataset('test', cfg, return_idx=True)
 # Model
 model1, model2 = config.get_model2(cfg, device=device, dataset=dataset)
 
-checkpoint_io = CheckpointIO(out_dir1, model=model1)
+checkpoint_io = CheckpointIO(out_dir, model=model1)
 checkpoint_io.load(cfg['test']['model_file1'])
 
-checkpoint_io2 = CheckpointIO(out_dir2, model=model2)
+checkpoint_io2 = CheckpointIO(out_dir, model=model2)
 checkpoint_io2.load(cfg['test']['model_file2'])
 # Generator
 generator = config.get_generator2(model1, model2, cfg, device=device)

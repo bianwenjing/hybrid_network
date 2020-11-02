@@ -54,6 +54,7 @@ class Pix2mesh_Cond(nn.Module):
 
     def forward(self, x):
         # x has size 224 x 224
+        # print('###########3', x.shape)
         x_0 = self.block_1(x)  # 64 x 56 x 56
         x_1 = self.block_2(x_0)  # 128 x 28 x 28
         x_2 = self.block_3(x_1)  # 256 x 14 x 14

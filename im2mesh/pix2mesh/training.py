@@ -95,7 +95,9 @@ class Trainer(BaseTrainer):
         num_edges = self.edges[block_id-1].shape[0]
         edges = self.edges[block_id-1]
         nod1 = torch.index_select(pred, 1, edges[:, 0].long())
+        # print('#########', nod1.shape)
         nod2 = torch.index_select(pred, 1, edges[:, 1].long())
+        # print('$$$$$$', nod2.shape)
         assert(
             nod1.shape == (batch_size, num_edges, 3) and
             nod2.shape == (batch_size, num_edges, 3))

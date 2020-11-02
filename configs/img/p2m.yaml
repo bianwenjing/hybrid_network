@@ -5,7 +5,7 @@ data:
   base_mesh: im2mesh/pix2mesh/ellipsoid/face3.obj
   ellipsoid: im2mesh/pix2mesh/ellipsoid/info_ellipsoid.dat
   img_folder: img_choy2016
-  img_size: 224 
+  img_size: 224
   img_with_camera: true
   with_transforms: true
   pointcloud_target_n: 8000
@@ -16,7 +16,7 @@ model:
   encoder_kwargs2: {}
   decoder_kwargs2:
     adjust_ellipsoid: True
-  hidden_dim2: 192
+  hidden_dim2: 256
   feat_dim2: 963
   c_dim2: 512
   z_dim2: 64
@@ -35,7 +35,9 @@ test:
   threshold: 0.9
   eval_mesh: true
   eval_pointcloud: false
+#  model_file: /home/wenjing/Desktop/pretrained_full.pt
 generation:
   batch_size: 100000
   generate_mesh: true
   generate_pointcloud: false
+#  generation_dir: pretrained

@@ -46,7 +46,7 @@ def get_trainer(model, optimizer, cfg, device):
         cfg (yaml file): config file
         device (PyTorch device): The PyTorch device that should be used
     '''
-    out_dir = cfg['training']['out_dir2']
+    out_dir = cfg['training']['out_dir']
     vis_dir = os.path.join(out_dir, 'vis')
     adjust_losses = cfg['model']['adjust_losses2']
     # Encoding necessary due to python2 pickle to python3 pickle convert

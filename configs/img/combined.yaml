@@ -33,14 +33,14 @@ model:
   adjust_losses2: True
 training:
   out_dir: out/img/combined
-  out_dir1:  out/img/onet
+#  out_dir1:  out/img/onet
 #  batch_size: 64
 #  model_selection_metric: iou
 #  model_selection_mode: maximize
 #  visualize_every: 20000
 #  validate_every: 20000
 #
-  out_dir2:  out/img/pixel2mesh
+#  out_dir2:  out/img/pixel2mesh
 #  batch_size: 12
 #  print_every: 40
 #  visualize_every: 10000
@@ -57,7 +57,7 @@ test:
 #  eval_pointcloud: false
 
   model_file1: https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_img2mesh_3-f786b04a.pt
-  model_file2: /home/wenjing/Desktop/model_800000.pt
+  model_file2: /home/wenjing/Desktop/model_400000.pt
 generation:
   batch_size: 100000
   refine: false

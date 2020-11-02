@@ -1,9 +1,11 @@
 import torch.nn as nn
 from im2mesh.pix2mesh.models.decoder import Decoder
+from im2mesh.pix2mesh.models.decoder2 import Decoder2
 
 
 decoder_dict = {
     'simple': Decoder,
+    'another': Decoder2
 }
 
 
