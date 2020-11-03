@@ -1,7 +1,7 @@
 import torch
 import trimesh
 import im2mesh.common as common
-
+import numpy as np
 
 class Generator3D(object):
     ''' Mesh Generator Class for the Pixel2Mesh model.
@@ -40,7 +40,13 @@ class Generator3D(object):
             outputs1, outputs2 = self.model(img, camera_mat)
             out_1, out_2, out_3 = outputs1
 
-        transformed_pred = common.transform_points_back(out_3, world_mat)
+        # vert = outputs1[2][0].cpu().numpy()
+        # vert_v = np.hstack((np.full([vert.shape[0], 1], "v"), vert))
+        # mesh = np.vstack((vert_v, self.base_mesh))
+
+        # transformed_pred = common.transform_points_back(out_3, world_mat)
+        # print('##########', out_3.shape)
+        transformed_pred = out_3
         vertices = transformed_pred.squeeze().cpu().numpy()
 
         faces = self.base_mesh[:, 1:]  # remove the f's in the first column

@@ -27,9 +27,9 @@ class Pix2Mesh(nn.Module):
         '''
         super().__init__()
         self.decoder = decoder
-        self.encoder = encoder
+        self.nn_encoder = encoder
 
     def forward(self, x, camera_mat):
-        fm = self.encoder(x)
+        fm = self.nn_encoder(x)
         pred = self.decoder(x, fm, camera_mat)
         return pred

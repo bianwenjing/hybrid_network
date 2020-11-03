@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import torch
 
 # from models.layers.gconv import GConv
-
+from im2mesh.pix2mesh.ellipsoid.tensor import dot
 
 class GResBlock(nn.Module):
 
@@ -77,7 +77,7 @@ class GConv(nn.Module):
     def forward(self, inputs):
         support = torch.matmul(inputs, self.weight)
         support_loop = torch.matmul(inputs, self.loop_weight)
-        output = self.dot(self.adj_mat, support, True) + support_loop
+        output = dot(self.adj_mat, support, True) + support_loop
         if self.bias is not None:
             ret = output + self.bias
         else:
@@ -89,18 +89,6 @@ class GConv(nn.Module):
                + str(self.in_features) + ' -> ' \
                + str(self.out_features) + ')'
 
-    def batch_mm(matrix, batch):
-        """
-        https://github.com/pytorch/pytorch/issues/14489
-        """
-        # TODO: accelerate this with batch operations
-        return torch.stack([matrix.mm(b) for b in batch], dim=0)
 
-    def dot(x, y, sparse=False):
-        """Wrapper for torch.matmul (sparse vs dense)."""
-        if sparse:
-            return self.batch_mm(x, y)
-        else:
-            return torch.matmul(x, y)
 
 
