@@ -21,7 +21,18 @@ class Decoder2(nn.Module):
         self.coord_dim = coor_dim
         self.last_hidden_dim = 128
 
+
         ellipsoid = Ellipsoid(0, ellipsoid)
+        if adjust_ellipsoid:
+            ''' This is the inverse of the operation the Pixel2mesh authors'
+            performed to original CAT model; it ensures that the ellipsoid
+            has the same size and scale in the not-transformed coordinate
+            system we are using. '''
+            print("Adjusting ellipsoid.")
+            ellipsoid.coord = ellipsoid.coord / 0.57
+            ellipsoid.coord[:, 1] = -ellipsoid.coord[:, 1]
+            ellipsoid.coord[:, 2] = -ellipsoid.coord[:, 2]
+
         self.init_pts = nn.Parameter(ellipsoid.coord, requires_grad=False)
 
 
@@ -55,8 +66,8 @@ class Decoder2(nn.Module):
 
         # self.projection = GraphProjection()
         mesh_pos = [0, 0, 0]
-        camera_f = [250, 250]
-        camera_c = [112, 112]
+        camera_f = [149.84375, 149.84375]
+        camera_c = [68.5, 68.5]
         self.projection = GProjection(mesh_pos, camera_f, camera_c, bound=0,
                                       tensorflow_compatible=True)
         # self.projection = GraphProjection()

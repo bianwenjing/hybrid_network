@@ -71,7 +71,17 @@ class Generator3D(object):
             outputs1, outputs2 = self.model_ex(img, camera_mat)
             out_1, out_2, out_3 = outputs1
 
+        out_3 = out_3 / 0.57
+        # out_3[:, :, 0] = out_3[:, :, 0] + 0.6
+        out_3[:, :, 1] = -out_3[:, :, 1]
+        out_3[:, :, 2] = -out_3[:, :, 2]
+
         transformed_pred = common.transform_points_back(out_3, world_mat)
+        # transformed_pred = out_3
+        # transformed_pred = transformed_pred/0.57
+        # transformed_pred[:, :, 0] = -transformed_pred[:, :, 0]
+        # transformed_pred[:, :, 1] = -transformed_pred[:, :, 1]
+        # transformed_pred[:, :, 2] = -transformed_pred[:, :, 2]
         vertices = transformed_pred.squeeze()
 
 

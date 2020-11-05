@@ -6,7 +6,8 @@ from torchvision.utils import save_image
 from im2mesh.training import BaseTrainer
 from im2mesh.utils import visualize as vis
 import im2mesh.common as common
-
+from im2mesh.pix2mesh.losses import P2MLoss
+from im2mesh.pix2mesh.ellipsoid.mesh import Ellipsoid
 
 class Trainer(BaseTrainer):
     r''' Trainer object for the pixel2mesh model.
@@ -39,6 +40,14 @@ class Trainer(BaseTrainer):
             self.edges.append(torch.from_numpy(adj[0]).to(device))
 
         # Hyperparameters from the authors' implementation
+        # self.param_chamfer_w = 3000
+        # self.param_chamfer_rel = 0.55
+        # self.param_edge = 300
+        # self.param_n = 0.5
+        # self.param_lap = 1500
+        # self.param_lap_rel = 0.3
+        # self.param_move = 100
+
         self.param_chamfer_w = 3000
         self.param_chamfer_rel = 0.55
         self.param_edge = 300
@@ -53,6 +62,9 @@ class Trainer(BaseTrainer):
             self.param_edge *= 0.57**2
             self.param_lap *= 0.57**2
             self.param_move *= 0.57**2
+        ###################################################################
+        self.ellipsoid = Ellipsoid(0, ellipsoid)
+        self.compute_loss2 = P2MLoss(self.ellipsoid).cuda()
 
     def train_step(self, data):
         r''' Performs a training step of the model.
@@ -76,8 +88,9 @@ class Trainer(BaseTrainer):
         normals = common.transform_points(normals, world_normal_mat)
 
         outputs1, outputs2 = self.model(img, camera_mat)
-        loss = self.compute_loss(
-            outputs1, outputs2, points_transformed, normals, img)
+        # loss = self.compute_loss(
+        #     outputs1, outputs2, points_transformed, normals, img)
+        loss = self.compute_loss2(outputs1, outputs2, points_transformed, normals, img)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -265,6 +278,10 @@ class Trainer(BaseTrainer):
         # Final loss
         loss = l_c + l_e + l_n + l_l + l_m
         return loss
+
+
+
+
 
     def visualize(self, data):
         r''' Visualises the GT point cloud and predicted vertices (as a point cloud).

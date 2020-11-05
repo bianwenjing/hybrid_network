@@ -75,7 +75,13 @@ model = config.get_model(cfg, device=device, dataset=train_dataset)
 # Intialize training
 npoints = 1000
 # optimizer = optim.Adam(model.parameters(), lr=1e-5)
-optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-5)
+# optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-5)
+optimizer = optim.Adam(
+                params=list(model.parameters()),
+                lr= 1e-6,
+                betas=(0.9, 0.999),
+                weight_decay=1e-6
+            )
 # optimizer = optim.SGD(model.parameters(), lr=1e-4, momentum=0.9)
 trainer = config.get_trainer(model, optimizer, cfg, device=device)
 
@@ -112,6 +118,9 @@ print('Current best validation metric (%s): %.8f'
 # TODO: reintroduce or remove scheduler?
 # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=4000,
 #                                       gamma=0.1, last_epoch=epoch_it)
+scheduler = optim.lr_scheduler.MultiStepLR(
+            optimizer, [30, 45], 0.1
+        )
 logger = SummaryWriter(os.path.join(out_dir, 'logs'))
 
 # Shorthands
@@ -127,7 +136,7 @@ print('Total number of parameters: %d' % nparameters)
 
 while True:
     epoch_it += 1
-#     scheduler.step()
+    scheduler.step()
 
     for batch in train_loader:
         it += 1

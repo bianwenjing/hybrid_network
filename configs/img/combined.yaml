@@ -21,12 +21,12 @@ model:
   z_dim: 0
 #
   encoder_latent2: simple
-  decoder2: simple
-  encoder2: pixel2mesh_cond
+  decoder2: another
+  encoder2: tensorflow
   encoder_kwargs2: {}
   decoder_kwargs2:
     adjust_ellipsoid: True
-  hidden_dim2: 192
+  hidden_dim2: 256
   feat_dim2: 963
   c_dim2: 512
   z_dim2: 64
@@ -57,7 +57,7 @@ test:
 #  eval_pointcloud: false
 
   model_file1: https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_img2mesh_3-f786b04a.pt
-  model_file2: /home/wenjing/Desktop/model_400000.pt
+  model_file2: /home/wenjing/Desktop/pretrained_full2.pt
 generation:
   batch_size: 100000
   refine: false
