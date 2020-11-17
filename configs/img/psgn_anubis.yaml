@@ -1,22 +1,21 @@
 method: psgn
 data:
-#  path: /home/wenjing/storage/data/ShapeNet
-  path: /home/wenjing/Downloads/ShapeNet
+  path: /home/wenjing/storage/data/ShapeNet
   img_folder: img_choy2016
-  img_size: 224 
+  img_size: 224
   pointcloud_target_n: 1024
 model:
-  decoder2: simple
-  encoder2: resnet18
-  c_dim: 256 
+  decoder: simple
+  encoder: resnet18
+  c_dim: 256
   z_dim: 0
 training:
-  out_dir: out/img/psgn
+  out_dir: /home/wenjing/storage/psgn
   batch_size: 64
 test:
   eval_mesh: true
   eval_pointcloud: false
-  model_file:  /home/wenjing/occupancy_networks-master/out/img/psgn/model_best.pt
+  model_file: /home/wenjing/storage/psgn/model_best.pt
 generation:
   batch_size: 100000
   refine: false
@@ -28,4 +27,3 @@ generation:
   generate_pointcloud: false
   #####################################
 #  generate_mesh: false
-

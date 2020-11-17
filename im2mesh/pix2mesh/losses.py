@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.layers.chamfer_wrapper import ChamferDist
-
+# from im2mesh.pix2mesh.chamfer_wrapper import ChamferDist
+from im2mesh.common import chamfer_distance
 
 class P2MLoss(nn.Module):
     def __init__(self, ellipsoid):
@@ -11,7 +11,7 @@ class P2MLoss(nn.Module):
         # self.options = options
         self.l1_loss = nn.L1Loss(reduction='mean')
         self.l2_loss = nn.MSELoss(reduction='mean')
-        self.chamfer_dist = ChamferDist()
+        # self.chamfer_dist = ChamferDist()
         self.laplace_idx = nn.ParameterList([
             nn.Parameter(idx, requires_grad=False) for idx in ellipsoid.laplace_idx])
         self.edges = nn.ParameterList([
@@ -60,6 +60,7 @@ class P2MLoss(nn.Module):
         """
 
         lap1 = self.laplace_coord(input1, self.laplace_idx[block_idx])
+        # print('!!!!!!!!!!!!', input1.shape, input2.shape)
         lap2 = self.laplace_coord(input2, self.laplace_idx[block_idx])
         laplace_loss = self.l2_loss(lap1, lap2) * lap1.size(-1)
         move_loss = self.l2_loss(input1, input2) * input1.size(-1) if block_idx > 0 else 0
@@ -75,6 +76,7 @@ class P2MLoss(nn.Module):
     def image_loss(self, gt_img, pred_img):
         rect_loss = F.binary_cross_entropy(pred_img, gt_img)
         return rect_loss
+
 
     def forward(self, outputs1, outputs2, points_transformed, normals, img):
         """
@@ -93,7 +95,8 @@ class P2MLoss(nn.Module):
         #     image_loss = self.image_loss(gt_images, outputs["reconst"])
 
         for i in range(3):
-            dist1, dist2, idx1, idx2 = self.chamfer_dist(gt_coord, pred_coord[i])
+            # dist1, dist2, idx1, idx2 = self.chamfer_dist(gt_coord, pred_coord[i])
+            dist1, dist2, idx1, idx2 = chamfer_distance(gt_coord, pred_coord[i], give_id=True)
             chamfer_loss +=  (torch.mean(dist1) + 0.55 * torch.mean(dist2))
             normal_loss += self.normal_loss(gt_normal, idx2, pred_coord[i], self.edges[i])
             edge_loss += self.edge_regularization(pred_coord[i], self.edges[i])

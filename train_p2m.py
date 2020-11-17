@@ -74,15 +74,32 @@ model = config.get_model(cfg, device=device, dataset=train_dataset)
 
 # Intialize training
 npoints = 1000
-optimizer = optim.Adam(model.parameters(), lr=1e-4)
+# optimizer = optim.Adam(model.parameters(), lr=1e-5)
+# optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-5)
+optimizer = optim.Adam(
+                params=list(model.parameters()),
+                lr= 1e-3,
+                betas=(0.9, 0.999),
+                weight_decay=1e-6
+            )
 # optimizer = optim.SGD(model.parameters(), lr=1e-4, momentum=0.9)
 trainer = config.get_trainer(model, optimizer, cfg, device=device)
 
 checkpoint_io = CheckpointIO(out_dir, model=model, optimizer=optimizer)
 try:
     load_dict = checkpoint_io.load('model.pt')
+    # load_dict = checkpoint_io.load('/home/wenjing/Desktop/pretrained_full2.pt')
 except FileExistsError:
     load_dict = dict()
+# try:
+#     load_dict = checkpoint_io.load('model.pt')
+# except FileExistsError:
+#     pass
+# try:
+#     load_dict = checkpoint_io.load('encoder.pt')
+# except FileExistsError:
+#     load_dict = dict()
+
 epoch_it = load_dict.get('epoch_it', -1)
 it = load_dict.get('it', -1)
 metric_val_best = load_dict.get(
@@ -102,6 +119,9 @@ print('Current best validation metric (%s): %.8f'
 # TODO: reintroduce or remove scheduler?
 # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=4000,
 #                                       gamma=0.1, last_epoch=epoch_it)
+scheduler = optim.lr_scheduler.MultiStepLR(
+            optimizer, [30, 45], 0.1
+        )
 logger = SummaryWriter(os.path.join(out_dir, 'logs'))
 
 # Shorthands
@@ -111,18 +131,19 @@ validate_every = cfg['training']['validate_every']
 visualize_every = cfg['training']['visualize_every']
 
 # Print model
-nparameters = sum(p.numel() for p in model.parameters())
-print(model)
-print('Total number of parameters: %d' % nparameters)
+# nparameters = sum(p.numel() for p in model.parameters())
+# print(model)
+# print('Total number of parameters: %d' % nparameters)
 
 while True:
     epoch_it += 1
-#     scheduler.step()
+    # scheduler.step()
 
     for batch in train_loader:
         it += 1
         loss = trainer.train_step(batch)
         logger.add_scalar('train/loss', loss, it)
+
 
         # Print output
         if print_every > 0 and (it % print_every) == 0:
@@ -167,3 +188,4 @@ while True:
             checkpoint_io.save('model.pt', epoch_it=epoch_it, it=it,
                                loss_val_best=metric_val_best)
             exit(3)
+    scheduler.step()

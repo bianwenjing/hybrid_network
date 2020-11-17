@@ -41,6 +41,9 @@ class VGG16TensorflowAlign(nn.Module):
         self.conv5_3 = nn.Conv2d(512, 512, 3, stride=1, padding=0)
         self.conv5_4 = nn.Conv2d(512, 512, 3, stride=1, padding=0)
 
+        # for p in self.parameters():
+        #     p.requires_grad = False
+
     def forward(self, img):
 
         img = F.relu(self.conv0_1(self.same_padding(img)))

@@ -1,0 +1,6 @@
+inherit_from: configs/img/pixel2mesh.yaml
+test:
+  model_file: /home/wenjing/storage/freeze_en/model_best.pt
+
+generation:
+  generation_dir: pretrained

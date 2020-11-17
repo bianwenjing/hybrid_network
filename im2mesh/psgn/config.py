@@ -11,8 +11,8 @@ def get_model(cfg, device=None, **kwargs):
         cfg (yaml object): the config file
         device (PyTorch device): the PyTorch device
     '''
-    decoder = cfg['model']['decoder']
-    encoder = cfg['model']['encoder']
+    decoder = cfg['model']['decoder2']
+    encoder = cfg['model']['encoder2']
     dim = cfg['data']['dim']
     c_dim = cfg['model']['c_dim']
     decoder_kwargs = cfg['model']['decoder_kwargs']

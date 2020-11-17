@@ -1,11 +1,11 @@
 import numpy as np
 import pickle
 
-data = np.load('/home/wenjing/Downloads/ShapeNet/03211117/717d3ef4c7000c5917a27c3fa1d3566d/img_choy2016/cameras.npz')
-lst = data.files
-for item in lst:
-    print(item)
-    print(data[item])
+# data = np.load('/home/wenjing/Downloads/ShapeNet/03211117/717d3ef4c7000c5917a27c3fa1d3566d/img_choy2016/cameras.npz')
+# lst = data.files
+# for item in lst:
+#     print(item)
+#     print(data[item])
 # base_mesh = np.loadtxt('im2mesh/pix2mesh/ellipsoid/face1.obj', dtype='|S32')
 # print(base_mesh)
 
@@ -18,35 +18,39 @@ for item in lst:
 # #             vertices
 #
 #
-# import torch
+import torch
 #
-# def removekey(d, listofkeys):
-#     r = dict(d)
-#     for key in listofkeys:
-#         print('key: {} is removed'.format(key))
-#         r.pop(key)
-#     return r
+def removekey(d, listofkeys):
+    r = dict(d)
+    for key in listofkeys:
+        print('key: {} is removed'.format(key))
+        r.pop(key)
+    return r
 
 
 
-# model_dict = torch.load('/home/wenjing/Downloads/tensorflow.pth.tar')
-# list = []
-# for key in model_dict['model']:
-#     if 'encoder' not in key:
-#         list.append(key)
-# new_model = {}
-# new_model['model'] = removekey(model_dict['model'], list)
-# torch.save(new_model, '/home/wenjing/occupancy_networks-master/out/img/pixel2mesh/model.pt')
+model_dict = torch.load('/home/wenjing/Desktop/pretrained_full2.pt')
+list = []
+for key in model_dict['model']:
+    if 'init' in key:
+        list.append(key)
+new_model = {}
+new_model['model'] = removekey(model_dict['model'], list)
+torch.save(new_model, '/home/wenjing/Desktop/no_init.pt')
 
-# model_dict = torch.load('/home/wenjing/occupancy_networks-master/out/img/pixel2mesh/model.pt')
+model_dict = torch.load('/home/wenjing/Desktop/no_init.pt')
 # print(model_dict.keys())
-# for key in model_dict['model']:
-#     print(key, model_dict['model'][key].shape)
+for key in model_dict['model']:
+    print(key, model_dict['model'][key].shape)
 
 
 # model2 = torch.load('/home/wenjing/Desktop/model_800000.pt')
 # for key in model2['model']:
 #     print(key, model2['model'][key].shape)
+
+# for key in model_dict['model']:
+#     if 'init_pts' in key:
+#         print(key, model_dict['model'][key].shape, model_dict['model'][key])
 ###################dict convert##########################################
 
 # model2 = torch.load('/home/wenjing/Desktop/model_800000.pt')
@@ -74,8 +78,8 @@ for item in lst:
 #
 # torch.save(new_model, '/home/wenjing/occupancy_networks-master/out/img/pixel2mesh/encoder.pt')
 #######################################################################################
-model1 = torch.load('/home/wenjing/occupancy_networks-master/out/img/pixel2mesh/model_0.pt')
-print(model1["model"]["decoder.gc1.0.lin.bias"])
-
-model2 = torch.load('/home/wenjing/occupancy_networks-master/out/img/pixel2mesh/model.pt')
-print(model2["model"]['decoder.gc1.0.lin.bias'])
+# model1 = torch.load('/home/wenjing/occupancy_networks-master/out/img/pixel2mesh/model_0.pt')
+# print(model1["model"]["decoder.gc1.0.lin.bias"])
+#
+# model2 = torch.load('/home/wenjing/occupancy_networks-master/out/img/pixel2mesh/model.pt')
+# print(model2["model"]['decoder.gc1.0.lin.bias'])

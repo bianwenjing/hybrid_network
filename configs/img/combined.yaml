@@ -1,4 +1,6 @@
 method: combined
+method1: onet
+method2: pix2mesh
 data:
 #   path: /home/wenjing/storage/data/ShapeNet
   img_folder: img_choy2016

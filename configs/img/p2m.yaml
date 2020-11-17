@@ -1,14 +1,15 @@
 method: pix2mesh
 data:
   multiclass: True
-#  path: data/ShapeNet
+  path: /home/wenjing/Downloads/ShapeNet2
   base_mesh: im2mesh/pix2mesh/ellipsoid/face3.obj
   ellipsoid: im2mesh/pix2mesh/ellipsoid/info_ellipsoid.dat
   img_folder: img_choy2016
   img_size: 224
   img_with_camera: true
   with_transforms: true
-  pointcloud_target_n: 8000
+  pointcloud_target_n: 9000
+  classes: ['03001627']
 model:
   encoder_latent2: simple
   decoder2: another
@@ -28,7 +29,8 @@ training:
 #  batch_size: 12
   batch_size: 1
   print_every: 40
-  visualize_every: 10000
+  visualize_every: 1000
+#  visualize_every: 10000
   checkpoint_every: 1000
   validate_every: 2000
   model_selection_metric: chamfer
@@ -37,6 +39,8 @@ test:
   eval_mesh: true
   eval_pointcloud: false
 #  model_file: /home/wenjing/Desktop/pretrained_full2.pt
+#  model_file: /home/wenjing/Desktop/no_init.pt
+#  model_file: /home/wenjing/occupancy_networks-master/out/img/pixel2mesh/model_best.pt
 generation:
   batch_size: 100000
   generate_mesh: true

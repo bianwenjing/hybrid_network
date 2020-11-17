@@ -1,0 +1,58 @@
+method: combined2
+method1: onet
+method2: psgn
+data:
+#  path: /home/wenjing/storage/data/ShapeNet
+  path: /home/wenjing/Downloads/ShapeNet
+  img_folder: img_choy2016
+  img_size: 224
+  points_subsample: 2048
+
+  pointcloud_target_n: 1024
+model:
+  encoder_latent: null
+  decoder: cbatchnorm
+  encoder: resnet18
+  c_dim: 256
+  z_dim: 0
+
+  decoder2: simple
+  encoder2: resnet18
+#  c_dim2: 256
+#  z_dim2: 0
+training:
+  out_dir: out/img/combined2
+  batch_size: 64
+  model_selection_metric: iou
+  model_selection_mode: maximize
+  visualize_every: 20000
+  validate_every: 20000
+
+
+#  batch_size: 64
+test:
+  threshold: 0.2
+  eval_mesh: true
+  eval_pointcloud: false
+
+#  eval_mesh: false
+#  eval_pointcloud: true
+
+  model_file1: https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_img2mesh_3-f786b04a.pt
+  model_file2: /home/wenjing/occupancy_networks-master/out/img/psgn/model_best.pt
+generation:
+  batch_size: 100000
+  refine: false
+  n_x: 128
+  n_z: 1
+  resolution_0: 32
+  upsampling_steps: 2
+
+#  batch_size: 100000
+#  refine: false
+#  n_x: 128
+#  n_z: 1
+#  generate_mesh: false
+
+  generate_pointcloud: false
+  generate_mesh: true

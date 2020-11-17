@@ -1,6 +1,6 @@
 method: onet
 data:
-  # path: /home/wenjing/storage/data/ShapeNet
+  path: /home/wenjing/storage/data/ShapeNet
   img_folder: img_choy2016
   img_size: 224 
   points_subsample: 2048 
@@ -11,8 +11,8 @@ model:
   c_dim: 256
   z_dim: 0
 training:
-#  out_dir:  /home/wenjing/storage/out/img/onet
-  out_dir:  out/img/onet
+  out_dir:  /home/wenjing/storage/out/onet
+#  out_dir:  out/img/onet
   batch_size: 64
   model_selection_metric: iou
   model_selection_mode: maximize

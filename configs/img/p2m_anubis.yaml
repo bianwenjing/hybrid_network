@@ -9,6 +9,7 @@ data:
   img_with_camera: true
   with_transforms: true
   pointcloud_target_n: 8000
+  classes: ['03001627']
 model:
   encoder_latent2: simple
   decoder2: another
@@ -22,9 +23,9 @@ model:
   z_dim2: 64
   adjust_losses2: True
 training:
-  out_dir: /home/wenjing/storage/p2m
+  out_dir: /home/wenjing/storage/global
 #  out_dir2: /home/wenjing/storage/onet
-  batch_size: 1
+  batch_size: 4
   print_every: 40
   visualize_every: 10000
   checkpoint_every: 1000
@@ -34,7 +35,8 @@ test:
   threshold: 0.9
   eval_mesh: true
   eval_pointcloud: false
-#  model_file: /home/wenjing/Desktop/pretrained_full2.pt
+  model_file: /home/wenjing/storage/global/model_best.pt
+#  model_file: /home/wenjing/pretrained_full2.pt
 generation:
   batch_size: 100000
   generate_mesh: true

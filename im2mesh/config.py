@@ -1,7 +1,7 @@
 import yaml
 from torchvision import transforms
 from im2mesh import data
-from im2mesh import onet, r2n2, psgn, pix2mesh, dmc, combined
+from im2mesh import onet, r2n2, psgn, pix2mesh, dmc, combined, combined2
 from im2mesh import preprocess
 
 
@@ -12,6 +12,7 @@ method_dict = {
     'pix2mesh': pix2mesh,
     'dmc': dmc,
     'combined': combined,
+    'combined2': combined2,
 }
 
 
@@ -86,12 +87,13 @@ def get_model2(cfg, device=None, dataset=None):
         device (device): pytorch device
         dataset (dataset): dataset
     '''
-    method = cfg['method']
+    method1 = cfg['method1']
+    method2 = cfg['method2']
     # model = method_dict[method].config.get_model(
     #     cfg, device=device, dataset=dataset)
-    model1 = method_dict['onet'].config.get_model(
+    model1 = method_dict[method1].config.get_model(
         cfg, device=device, dataset=dataset)
-    model2 = method_dict['pix2mesh'].config.get_model(
+    model2 = method_dict[method2].config.get_model(
         cfg, device=device, dataset=dataset)
     return model1, model2
 #########################################################

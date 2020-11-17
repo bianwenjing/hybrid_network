@@ -4,7 +4,6 @@ from torch.utils import data
 import numpy as np
 import yaml
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -15,7 +14,6 @@ class Field(object):
 
     def load(self, data_path, idx, category):
         ''' Loads a data point.
-
         Args:
             data_path (str): path to data file
             idx (int): index of data point
@@ -25,7 +23,6 @@ class Field(object):
 
     def check_complete(self, files):
         ''' Checks if set is complete.
-
         Args:
             files: files
         '''
@@ -39,7 +36,6 @@ class Shapes3dDataset(data.Dataset):
     def __init__(self, dataset_folder, fields, split=None,
                  categories=None, no_except=True, transform=None):
         ''' Initialization of the the 3D shape dataset.
-
         Args:
             dataset_folder (str): dataset folder
             fields (dict): dictionary of fields
@@ -69,9 +65,9 @@ class Shapes3dDataset(data.Dataset):
         else:
             self.metadata = {
                 c: {'id': c, 'name': 'n/a'} for c in categories
-            } 
-        
-        # Set index
+            }
+
+            # Set index
         for c_idx, c in enumerate(categories):
             self.metadata[c]['idx'] = c_idx
 
@@ -85,7 +81,7 @@ class Shapes3dDataset(data.Dataset):
             split_file = os.path.join(subpath, split + '.lst')
             with open(split_file, 'r') as f:
                 models_c = f.read().split('\n')
-            
+
             self.models += [
                 {'category': c, 'model': m}
                 for m in models_c
@@ -98,7 +94,6 @@ class Shapes3dDataset(data.Dataset):
 
     def __getitem__(self, idx):
         ''' Returns an item of the dataset.
-
         Args:
             idx (int): ID of data point
         '''
@@ -141,7 +136,6 @@ class Shapes3dDataset(data.Dataset):
 
     def test_model_complete(self, category, model):
         ''' Tests if model is complete.
-
         Args:
             model (str): modelname
         '''
@@ -159,7 +153,6 @@ class Shapes3dDataset(data.Dataset):
 def collate_remove_none(batch):
     ''' Collater that puts each data field into a tensor with outer dimension
         batch size.
-
     Args:
         batch: batch
     '''

@@ -59,7 +59,10 @@ class GConv(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
 
-        self.adj_mat = nn.Parameter(adj_mat, requires_grad=False)
+
+
+        # self.adj_mat = nn.Parameter(adj_mat, requires_grad=False)
+        self.adj_mat = adj_mat.cuda()
         self.weight = nn.Parameter(torch.zeros((in_features, out_features), dtype=torch.float))
         # Following https://github.com/Tong-ZHAO/Pixel2Mesh-Pytorch/blob/a0ae88c4a42eef6f8f253417b97df978db842708/model/gcn_layers.py#L45
         # This seems to be different from the original implementation of P2M

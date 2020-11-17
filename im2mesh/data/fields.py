@@ -6,7 +6,7 @@ import numpy as np
 import trimesh
 from im2mesh.data.core import Field
 from im2mesh.utils import binvox_rw
-
+import torch
 
 class IndexField(Field):
     ''' Basic index field.'''
@@ -87,8 +87,11 @@ class ImagesField(Field):
         filename = files[idx_img]
 
         image = Image.open(filename).convert('RGB')
+
         if self.transform is not None:
             image = self.transform(image)
+
+
 
         data = {
             None: image

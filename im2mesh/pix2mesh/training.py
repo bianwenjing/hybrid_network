@@ -82,12 +82,15 @@ class Trainer(BaseTrainer):
 
         # Transform GT data into camera coordinate system
         world_mat, camera_mat = camera_args['Rt'], camera_args['K']
+        # points_transformed = points
         points_transformed = common.transform_points(points, world_mat)
+
         # Transform GT normals to camera coordinate system
         world_normal_mat = world_mat[:, :, :3]
         normals = common.transform_points(normals, world_normal_mat)
 
         outputs1, outputs2 = self.model(img, camera_mat)
+
         # loss = self.compute_loss(
         #     outputs1, outputs2, points_transformed, normals, img)
         loss = self.compute_loss2(outputs1, outputs2, points_transformed, normals, img)
@@ -303,6 +306,7 @@ class Trainer(BaseTrainer):
             outputs1, outputs2 = self.model(img, camera_mat)
 
         pred_vertices_1, pred_vertices_2, pred_vertices_3 = outputs1
+        # points_out = pred_vertices_3
         points_out = common.transform_points_back(pred_vertices_3, world_mat)
         points_out = points_out.cpu().numpy()
         input_img_path = os.path.join(self.vis_dir, 'input.png')
@@ -331,6 +335,7 @@ class Trainer(BaseTrainer):
         camera_args = common.get_camera_args(
             data, 'pointcloud.loc', 'pointcloud.scale', device=self.device)
         world_mat, camera_mat = camera_args['Rt'], camera_args['K']
+        # points_transformed = points
         points_transformed = common.transform_points(points, world_mat)
         # Transform GT normals to camera coordinates
         world_normal_mat = world_mat[:, :, :3]
