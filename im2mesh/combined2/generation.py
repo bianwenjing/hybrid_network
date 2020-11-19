@@ -105,9 +105,9 @@ class Generator3D(object):
             return mesh
 
     def generate_from_latent2(self, z, c=None, points=None, stats_dict={}, **kwargs):
-        for i in range(200):
+        for i in range(20):
             normals, values = self.estimate_normals_oc(points, z, c)
-            # print('**********', values[abs(values) > 1].shape)
+            print('**********', values[abs(values) > 1].shape)
             points = points - torch.mul(normals,values).permute(1,0)
         normals, values = self.estimate_normals_oc(points, z, c)
 

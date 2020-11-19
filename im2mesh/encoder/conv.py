@@ -60,6 +60,9 @@ class Resnet18(nn.Module):
         else:
             raise ValueError('c_dim must be 512 if use_linear is False')
 
+        for p in self.parameters():
+            p.requires_grad = False
+
     def forward(self, x):
         if self.normalize:
             x = normalize_imagenet(x)

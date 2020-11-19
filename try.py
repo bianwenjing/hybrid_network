@@ -20,6 +20,7 @@ import pickle
 #
 import torch
 #
+
 def removekey(d, listofkeys):
     r = dict(d)
     for key in listofkeys:
@@ -29,25 +30,34 @@ def removekey(d, listofkeys):
 
 
 
-model_dict = torch.load('/home/wenjing/Desktop/pretrained_full2.pt')
-list = []
-for key in model_dict['model']:
-    if 'init' in key:
-        list.append(key)
-new_model = {}
-new_model['model'] = removekey(model_dict['model'], list)
-torch.save(new_model, '/home/wenjing/Desktop/no_init.pt')
-
-model_dict = torch.load('/home/wenjing/Desktop/no_init.pt')
-# print(model_dict.keys())
-for key in model_dict['model']:
-    print(key, model_dict['model'][key].shape)
-
-
-# model2 = torch.load('/home/wenjing/Desktop/model_800000.pt')
+# model_dict = torch.load('/home/wenjing/Desktop/pretrained_full2.pt')
+# list = []
+# for key in model_dict['model']:
+#     if 'init' in key:
+#         list.append(key)
+# new_model = {}
+# new_model['model'] = removekey(model_dict['model'], list)
+# torch.save(new_model, '/home/wenjing/Desktop/no_init.pt')
+#
+# model_dict = torch.load('/home/wenjing/Desktop/no_init.pt')
+# # print(model_dict.keys())
+# for key in model_dict['model']:
+# #     print(key, model_dict['model'][key].shape)
+# from torch.utils import model_zoo
+# url = 'https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_img2mesh_3-f786b04a.pt'
+# model2 = model_zoo.load_url(url, progress=True)
+# list = []
 # for key in model2['model']:
-#     print(key, model2['model'][key].shape)
-
+#     if 'encoder' not in key:
+#         list.append(key)
+#     # print(key, model2['model'][key].shape)
+# new_model = {}
+# new_model['model'] = removekey(model2['model'], list)
+# torch.save(new_model, '/home/wenjing/oc_encoder.pt')
+model_dict = torch.load('/home/wenjing/storage/psgn_encoder/model.pt')
+# for key in model_dict['model']:
+#     print(key)
+print(model_dict['model']['encoder.fc.weight'])
 # for key in model_dict['model']:
 #     if 'init_pts' in key:
 #         print(key, model_dict['model'][key].shape, model_dict['model'][key])

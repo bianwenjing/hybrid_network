@@ -80,9 +80,11 @@ trainer = config.get_trainer(model, optimizer, cfg, device=device)
 
 checkpoint_io = CheckpointIO(out_dir, model=model, optimizer=optimizer)
 try:
-    load_dict = checkpoint_io.load('model.pt')
+    load_dict = checkpoint_io.load('/home/wenjing/oc_encoder.pt')
+    # load_dict = checkpoint_io.load('model.pt')
 except FileExistsError:
     load_dict = dict()
+
 epoch_it = load_dict.get('epoch_it', -1)
 it = load_dict.get('it', -1)
 metric_val_best = load_dict.get(
