@@ -67,6 +67,7 @@ class Trainer(BaseTrainer):
         occ = data.get('points.occ').to(device)
 
         inputs = data.get('inputs', torch.empty(points.size(0), 0)).to(device)
+        # inputs = data.get('inputs').to(device)
         voxels_occ = data.get('voxels')
 
         points_iou = data.get('points_iou').to(device)
@@ -153,6 +154,8 @@ class Trainer(BaseTrainer):
         p = data.get('points').to(device)
         occ = data.get('points.occ').to(device)
         inputs = data.get('inputs', torch.empty(p.size(0), 0)).to(device)
+
+
 
         kwargs = {}
 

@@ -108,7 +108,7 @@ class Trainer(BaseTrainer):
                 batch_size, *points_voxels.size())
             points_voxels = points_voxels.to(device)
             with torch.no_grad():
-                p_out = self.model(points_voxels, inputs,
+                p_out, points_out = self.model(points_voxels, inputs,
                                    sample=self.eval_sample, **kwargs)
 
             voxels_occ_np = (voxels_occ >= 0.5).cpu().numpy()
@@ -186,11 +186,12 @@ class Trainer(BaseTrainer):
         loss = kl.mean()
 
         # General points
-        logits, points_out = self.model.decode(p, z, c, **kwargs).logits
+        logits, points_out = self.model.decode(p, z, c, **kwargs)
+
         loss = loss + chamfer_distance(points, points_out).mean()
 
         loss_i = F.binary_cross_entropy_with_logits(
-            logits, occ, reduction='none')
+            logits.logits, occ, reduction='none')
         loss = loss + loss_i.sum(-1).mean()
 
         return loss
