@@ -5,6 +5,7 @@ data:
   img_folder: img_choy2016
   img_size: 224 
   pointcloud_target_n: 1024
+  classes: ['03001627']
 model:
   decoder2: simple
   encoder2: resnet18
@@ -16,7 +17,7 @@ training:
 test:
   eval_mesh: true
   eval_pointcloud: false
-  model_file:  /home/wenjing/occupancy_networks-master/out/img/psgn/model_best.pt
+  model_file:  /home/wenjing/Desktop/model_best.pt
 generation:
   batch_size: 100000
   refine: false

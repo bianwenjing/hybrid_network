@@ -19,7 +19,11 @@ import pickle
 #
 #
 import torch
+from torch import distributions as dist
 #
+a = torch.tensor([5, 6])
+p_r = dist.Bernoulli(logits=a)
+print(p_r.probs)
 
 def removekey(d, listofkeys):
     r = dict(d)
@@ -54,10 +58,10 @@ def removekey(d, listofkeys):
 # new_model = {}
 # new_model['model'] = removekey(model2['model'], list)
 # torch.save(new_model, '/home/wenjing/oc_encoder.pt')
-model_dict = torch.load('/home/wenjing/storage/psgn_encoder/model.pt')
+# model_dict = torch.load('/home/wenjing/storage/psgn_encoder/model.pt')
 # for key in model_dict['model']:
 #     print(key)
-print(model_dict['model']['encoder.fc.weight'])
+# print(model_dict['model']['encoder.fc.weight'])
 # for key in model_dict['model']:
 #     if 'init_pts' in key:
 #         print(key, model_dict['model'][key].shape, model_dict['model'][key])

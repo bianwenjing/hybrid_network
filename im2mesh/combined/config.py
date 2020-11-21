@@ -89,20 +89,32 @@ def get_generator(model_in, model_ex, cfg, device, **kwargs):
         cfg (dict): imported yaml config
         device (device): pytorch device
     '''
-    # preprocessor = config.get_preprocessor(cfg, device=device)
-    preprocessor = None
-    base_mesh = np.loadtxt(cfg['data']['base_mesh'], dtype='|S32')
-    generator = generation.Generator3D(
-        model_in, model_ex, base_mesh,
-        device=device,
-        threshold=cfg['test']['threshold'],
-        resolution0=cfg['generation']['resolution_0'],
-        upsampling_steps=cfg['generation']['upsampling_steps'],
-        sample=cfg['generation']['use_sampling'],
-        refinement_step=cfg['generation']['refinement_step'],
-        simplify_nfaces=cfg['generation']['simplify_nfaces'],
-        preprocessor=preprocessor,
-    )
+    preprocessor = config.get_preprocessor(cfg, device=device)
+    if cfg['method2'] == 'pix2mesh':
+        preprocessor = None
+        base_mesh = np.loadtxt(cfg['data']['base_mesh'], dtype='|S32')
+        generator = generation.Generator3D(
+            model_in, model_ex, base_mesh,
+            device=device,
+            threshold=cfg['test']['threshold'],
+            resolution0=cfg['generation']['resolution_0'],
+            upsampling_steps=cfg['generation']['upsampling_steps'],
+            sample=cfg['generation']['use_sampling'],
+            refinement_step=cfg['generation']['refinement_step'],
+            simplify_nfaces=cfg['generation']['simplify_nfaces'],
+            preprocessor=preprocessor,
+        )
+    elif cfg['method2'] == 'psgn':
+        generator = generation.Generator3D(model_in, model_ex,
+                                           device=device,
+                                           threshold=cfg['test']['threshold'],
+                                           resolution0=cfg['generation']['resolution_0'],
+                                           upsampling_steps=cfg['generation']['upsampling_steps'],
+                                           sample=cfg['generation']['use_sampling'],
+                                           refinement_step=cfg['generation']['refinement_step'],
+                                           simplify_nfaces=cfg['generation']['simplify_nfaces'],
+                                           preprocessor=preprocessor,
+                                           )
     return generator
 
 #

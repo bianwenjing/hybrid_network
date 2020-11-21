@@ -130,12 +130,12 @@ class Generator3D(object):
         # # Compute bounding box size
         # box_size = 1 + self.padding
 ###############################################################################
-        # for i in range(200):
-        #     normals, values = self.estimate_normals_oc(vertices, z, c)
-        #     # print('**********', values[abs(values) > 1].shape)
-        #     vertices = vertices - torch.mul(normals,values).permute(1,0)
-        # normals, values = self.estimate_normals_oc(vertices, z, c)
-        # print('**********', values[abs(values)>1].shape)
+        for i in range(200):
+            normals, values = self.estimate_normals_oc(vertices, z, c)
+            # print('**********', values[abs(values) > 1].shape)
+            vertices = vertices - torch.mul(normals,values).permute(1,0)
+        normals, values = self.estimate_normals_oc(vertices, z, c)
+        print('**********', values[abs(values)>1].shape)
 ############################################################################
         # # Shortcut
         # if self.upsampling_steps == 0:

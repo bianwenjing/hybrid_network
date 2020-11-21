@@ -23,17 +23,19 @@ class Decoder2(nn.Module):
 
 
         ellipsoid = Ellipsoid(0, ellipsoid)
-        if adjust_ellipsoid:
-            ''' This is the inverse of the operation the Pixel2mesh authors'
-            performed to original CAT model; it ensures that the ellipsoid
-            has the same size and scale in the not-transformed coordinate
-            system we are using. '''
-            print("Adjusting ellipsoid.")
-            ellipsoid.coord = ellipsoid.coord / 0.57
-            ellipsoid.coord[:, 1] = -ellipsoid.coord[:, 1]
-            ellipsoid.coord[:, 2] = -ellipsoid.coord[:, 2]
+        # if adjust_ellipsoid:
+        #     ''' This is the inverse of the operation the Pixel2mesh authors'
+        #     performed to original CAT model; it ensures that the ellipsoid
+        #     has the same size and scale in the not-transformed coordinate
+        #     system we are using. '''
+        #     print("Adjusting ellipsoid.")
+        #
+        #     ellipsoid.coord = ellipsoid.coord / 0.57
+        #     ellipsoid.coord[:, 1] = -ellipsoid.coord[:, 1]
+        #     ellipsoid.coord[:, 2] = -ellipsoid.coord[:, 2]
 
-        self.init_pts = nn.Parameter(ellipsoid.coord, requires_grad=False)
+        # self.init_pts = nn.Parameter(ellipsoid.coord, requires_grad=False)
+        self.init_pts = ellipsoid.coord.cuda()
 
 
         self.gconv_activation = True
@@ -67,7 +69,9 @@ class Decoder2(nn.Module):
         # self.projection = GraphProjection()
         mesh_pos = [0, 0, 0]
         camera_f = [149.84375, 149.84375]
+        # camera_f = [250, 250]
         camera_c = [68.5, 68.5]
+        # camera_c = [112, 112]
         self.projection = GProjection(mesh_pos, camera_f, camera_c, bound=0,
                                       tensorflow_compatible=True)
         # self.projection = GraphProjection()
@@ -76,19 +80,20 @@ class Decoder2(nn.Module):
         self.gconv = GConv(in_features=self.last_hidden_dim, out_features=self.coord_dim,
                            adj_mat=ellipsoid.adj_mat[2])
 
+
+
     def forward(self, x, fm, camera_mat):
         batch_size = x.size(0)
         # img_feats = self.nn_encoder(img)
         img_shape = self.projection.image_feature_shape(x)
 
         init_pts = self.init_pts.data.unsqueeze(0).expand(batch_size, -1, -1)
-        # init_pts = self.initial_coordinates.expand(
-        #     batch_size, -1, -1)
 
         # GCN Block 1
         x = self.projection(img_shape, fm, init_pts)
         # x = self.projection(init_pts, fm, camera_mat)
         x1, x_hidden = self.gcns[0](x)
+
 
         # before deformation 2
         x1_up = self.unpooling[0](x1)
@@ -123,7 +128,7 @@ class Decoder2(nn.Module):
         #     "pred_coord_before_deform": [init_pts, x1_up, x2_up],
         #     "reconst": reconst
         # }
-        outputs = (x2, x2, x3)
+        outputs = (x1, x2, x3)
         outputs_2 = (init_pts, x1_up, x2_up)
         return outputs, outputs_2
 

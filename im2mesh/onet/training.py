@@ -74,6 +74,7 @@ class Trainer(BaseTrainer):
         occ_iou = data.get('points_iou.occ').to(device)
 
         kwargs = {}
+        # print('@@@@@@@@@@22', points.shape) (10, 2048, 3)
 
         with torch.no_grad():
             elbo, rec_error, kl = self.model.compute_elbo(
@@ -86,6 +87,8 @@ class Trainer(BaseTrainer):
         # Compute iou
         batch_size = points.size(0)
 
+        # print('@@@@@@@@@@', points_iou.shape) (10, 100000, 3)
+
         with torch.no_grad():
             p_out = self.model(points_iou, inputs,
                                sample=self.eval_sample, **kwargs)
@@ -95,6 +98,7 @@ class Trainer(BaseTrainer):
         iou = compute_iou(occ_iou_np, occ_iou_hat_np).mean()
         eval_dict['iou'] = iou
 
+
         # Estimate voxel iou
         if voxels_occ is not None:
             voxels_occ = voxels_occ.to(device)
@@ -103,6 +107,8 @@ class Trainer(BaseTrainer):
             points_voxels = points_voxels.expand(
                 batch_size, *points_voxels.size())
             points_voxels = points_voxels.to(device)
+
+            # print('$$$$$$$$$44', points_voxels.shape)  (10, 32768, 3)
             with torch.no_grad():
                 p_out = self.model(points_voxels, inputs,
                                    sample=self.eval_sample, **kwargs)
@@ -131,6 +137,8 @@ class Trainer(BaseTrainer):
         p = p.expand(batch_size, *p.size())
 
         kwargs = {}
+
+        # print('#########3', p.shape)  (12, 32^3, 3)
         with torch.no_grad():
             p_r = self.model(p, inputs, sample=self.eval_sample, **kwargs)
 
@@ -157,7 +165,9 @@ class Trainer(BaseTrainer):
 
 
 
+
         kwargs = {}
+
 
         c = self.model.encode_inputs(inputs)
         q_z = self.model.infer_z(p, occ, c, **kwargs)
@@ -166,6 +176,8 @@ class Trainer(BaseTrainer):
         # KL-divergence
         kl = dist.kl_divergence(q_z, self.model.p0_z).sum(dim=-1)
         loss = kl.mean()
+
+        # print('########3333', p.shape)  [64, 2048, 3]
 
         # General points
         logits = self.model.decode(p, z, c, **kwargs).logits

@@ -97,6 +97,7 @@ class Trainer(BaseTrainer):
         eval_dict['iou'] = iou
 
         chamfer_loss = chamfer_distance(points_chamfer, points_out).mean()
+        chamfer_loss =chamfer_loss.item()
         eval_dict['chamfer'] = chamfer_loss
 
         # Estimate voxel iou
@@ -185,10 +186,11 @@ class Trainer(BaseTrainer):
         kl = dist.kl_divergence(q_z, self.model.p0_z).sum(dim=-1)
         loss = kl.mean()
 
+
         # General points
         logits, points_out = self.model.decode(p, z, c, **kwargs)
 
-        loss = loss + chamfer_distance(points, points_out).mean()
+        loss = loss + 10000 * chamfer_distance(points, points_out).mean()
 
         loss_i = F.binary_cross_entropy_with_logits(
             logits.logits, occ, reduction='none')

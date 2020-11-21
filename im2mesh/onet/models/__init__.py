@@ -108,7 +108,9 @@ class OccupancyNetwork(nn.Module):
         '''
 
         logits = self.decoder(p, z, c, **kwargs)
+        # print('#########',logits.shape)
         p_r = dist.Bernoulli(logits=logits)
+        # print('!!!!!!!!!!!1', type(p_r), p_r)
         return p_r
 
     def infer_z(self, p, occ, c, **kwargs):

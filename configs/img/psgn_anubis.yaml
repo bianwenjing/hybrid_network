@@ -5,12 +5,12 @@ data:
   img_size: 224
   pointcloud_target_n: 1024
 model:
-  decoder: simple
-  encoder: resnet18
+  decoder2: simple
+  encoder2: resnet18
   c_dim: 256
   z_dim: 0
 training:
-  out_dir: /home/wenjing/storage/psgn
+  out_dir: /home/wenjing/storage/psgn_encoder
   batch_size: 64
 test:
   eval_mesh: true

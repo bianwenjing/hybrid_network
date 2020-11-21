@@ -92,8 +92,7 @@ class CombinedNetwork(nn.Module):
         batch_size = p.size(0)
         c = self.encode_inputs(inputs)
         z = self.get_z_from_prior((batch_size,), sample=sample)
-        points = self.decoder_psgn(c)
-        p_r = self.decoder_oc(p, z, c, **kwargs)
+        p_r, points = self.decode(p, z, c, **kwargs)
 
         return p_r, points
 

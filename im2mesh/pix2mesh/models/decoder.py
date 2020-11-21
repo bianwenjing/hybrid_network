@@ -107,6 +107,7 @@ class Decoder(nn.Module):
         """
 
         batch_size = x.shape[0]
+        # print('############', batch_size)
         # List of initial 3D coordinates (first item) and outputs of the layers
         out = list()
 

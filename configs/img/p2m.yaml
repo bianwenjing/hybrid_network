@@ -1,7 +1,7 @@
 method: pix2mesh
 data:
   multiclass: True
-  path: /home/wenjing/Downloads/ShapeNet2
+  path: /home/wenjing/Downloads/ShapeNet
   base_mesh: im2mesh/pix2mesh/ellipsoid/face3.obj
   ellipsoid: im2mesh/pix2mesh/ellipsoid/info_ellipsoid.dat
   img_folder: img_choy2016

@@ -21,7 +21,7 @@ model:
 #  c_dim2: 256
 #  z_dim2: 0
 training:
-  out_dir: /home/wenjing/storage/combined2
+  out_dir: /home/wenjing/storage/combined2_2
   batch_size: 64
   model_selection_metric: iou
   model_selection_mode: maximize
