@@ -1,19 +1,25 @@
-method: onet
+method: combined2
 data:
   classes: ['02691156']
   input_type: null
   path: /home/wenjing/Downloads/ShapeNet
   points_subsample: 2048
+
+  pointcloud_target_n: 1024
 model:
   encoder_latent: simple
   decoder: simple
   encoder: null
   c_dim: 0
   z_dim: 128
+
+  decoder2: simple
 training:
-  out_dir:  out/unconditional/onet_airplanes
+  out_dir:  out/unconditional/combined2
   batch_size: 64
   eval_sample: true
+
+
 test:
   threshold: 0.2
   eval_mesh: true
@@ -26,3 +32,5 @@ generation:
   use_sampling: true
   copy_groundtruth: false
   copy_input: false
+  generate_mesh: true
+  generate_pointcloud: true

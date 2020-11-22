@@ -21,9 +21,9 @@ import pickle
 import torch
 from torch import distributions as dist
 #
-a = torch.tensor([5, 6])
-p_r = dist.Bernoulli(logits=a)
-print(p_r.probs)
+# a = torch.tensor([5, 6])
+# p_r = dist.Bernoulli(logits=a)
+# print(p_r.probs)
 
 def removekey(d, listofkeys):
     r = dict(d)
@@ -47,17 +47,20 @@ def removekey(d, listofkeys):
 # # print(model_dict.keys())
 # for key in model_dict['model']:
 # #     print(key, model_dict['model'][key].shape)
-# from torch.utils import model_zoo
+from torch.utils import model_zoo
 # url = 'https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_img2mesh_3-f786b04a.pt'
-# model2 = model_zoo.load_url(url, progress=True)
-# list = []
+url = 'https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_uncond_airplanes-26c9d089.pt'
+model2 = model_zoo.load_url(url, progress=True)
 # for key in model2['model']:
-#     if 'encoder' not in key:
-#         list.append(key)
-#     # print(key, model2['model'][key].shape)
-# new_model = {}
-# new_model['model'] = removekey(model2['model'], list)
-# torch.save(new_model, '/home/wenjing/oc_encoder.pt')
+#     print(key, model2['model'][key].shape)
+list = []
+for key in model2['model']:
+    if 'encoder' not in key:
+        list.append(key)
+    print(key, model2['model'][key].shape)
+new_model = {}
+new_model['model'] = removekey(model2['model'], list)
+torch.save(new_model, '/home/wenjing/uncon_encoder.pt')
 # model_dict = torch.load('/home/wenjing/storage/psgn_encoder/model.pt')
 # for key in model_dict['model']:
 #     print(key)
