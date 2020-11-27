@@ -30,6 +30,7 @@ training:
 
 
 #  batch_size: 64
+  consistency_loss: false
 test:
   threshold: 0.2
   eval_mesh: true
@@ -39,7 +40,7 @@ test:
 #  eval_pointcloud: true
 
 #  model_file1: https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_img2mesh_3-f786b04a.pt
-#  model_file2: /home/wenjing/Desktop/model_best.pt
+  model_file: /home/wenjing/storage/combined2_2/model_best.pt
 generation:
   batch_size: 100000
   refine: false
@@ -56,3 +57,4 @@ generation:
 
   generate_pointcloud: false
   generate_mesh: true
+  generation_dir: pretrained

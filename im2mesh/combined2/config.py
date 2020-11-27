@@ -26,13 +26,18 @@ def get_model(cfg, device=None, dataset=None, **kwargs):
     decoder_kwargs = cfg['model']['decoder_kwargs']
     encoder_kwargs = cfg['model']['encoder_kwargs']
     encoder_latent_kwargs = cfg['model']['encoder_latent_kwargs']
+    consistency_loss = cfg['training']['consistency_loss']
 
     decoder_oc = models.decoder_dict_oc[decoder_oc](
         dim=dim, z_dim=z_dim, c_dim=c_dim,
         **decoder_kwargs
     )
+    # decoder_psgn = models.decoder_dict_psgn[decoder_psgn](
+    #     dim=dim, c_dim=c_dim,
+    #     **decoder_kwargs
+    # )
     decoder_psgn = models.decoder_dict_psgn[decoder_psgn](
-        dim=dim, c_dim=c_dim,
+        dim=dim, z_dim=z_dim, c_dim=c_dim,
         **decoder_kwargs
     )
 
@@ -56,7 +61,7 @@ def get_model(cfg, device=None, dataset=None, **kwargs):
 
     p0_z = get_prior_z(cfg, device)
     model = models.CombinedNetwork(
-        decoder_oc, decoder_psgn, encoder, encoder_latent, p0_z, device=device
+        decoder_oc, decoder_psgn, encoder, encoder_latent, p0_z, device=device, consistency_loss=consistency_loss,
     )
 
     return model
@@ -75,18 +80,20 @@ def get_trainer(model, optimizer, cfg, device, **kwargs):
     out_dir = cfg['training']['out_dir']
     vis_dir = os.path.join(out_dir, 'vis')
     input_type = cfg['data']['input_type']
+    consistency_loss = cfg['training']['consistency_loss']
 
     trainer = training.Trainer(
         model, optimizer,
         device=device, input_type=input_type,
         vis_dir=vis_dir, threshold=threshold,
         eval_sample=cfg['training']['eval_sample'],
+        consistency_loss=consistency_loss,
     )
 
     return trainer
 
 
-def get_generator(model_in, model_ex, cfg, device, **kwargs):
+def get_generator(model, cfg, device, **kwargs):
     ''' Returns the generator object.
 
     Args:
@@ -97,7 +104,7 @@ def get_generator(model_in, model_ex, cfg, device, **kwargs):
     preprocessor = config.get_preprocessor(cfg, device=device)
 
     generator = generation.Generator3D(
-        model_in, model_ex,
+        model,
         device=device,
         threshold=cfg['test']['threshold'],
         resolution0=cfg['generation']['resolution_0'],

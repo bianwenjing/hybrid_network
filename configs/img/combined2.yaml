@@ -31,6 +31,7 @@ training:
 
 
 #  batch_size: 64
+  consistency_loss: true
 test:
   threshold: 0.2
   eval_mesh: true

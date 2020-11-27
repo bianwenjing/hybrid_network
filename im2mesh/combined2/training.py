@@ -25,7 +25,7 @@ class Trainer(BaseTrainer):
     '''
 
     def __init__(self, model, optimizer, device=None, input_type='img',
-                 vis_dir=None, threshold=0.5, eval_sample=False):
+                 vis_dir=None, threshold=0.5, eval_sample=False, consistency_loss=False):
         self.model = model
         self.optimizer = optimizer
         self.device = device
@@ -33,6 +33,7 @@ class Trainer(BaseTrainer):
         self.vis_dir = vis_dir
         self.threshold = threshold
         self.eval_sample = eval_sample
+        self.consistency_loss = consistency_loss
 
         if vis_dir is not None and not os.path.exists(vis_dir):
             os.makedirs(vis_dir)
@@ -88,8 +89,9 @@ class Trainer(BaseTrainer):
         batch_size = points.size(0)
 
         with torch.no_grad():
-            p_out, points_out = self.model(points_iou, inputs,
+            p_out, p_psgn_out, points_out = self.model(points_iou, inputs,
                                sample=self.eval_sample, **kwargs)
+
 
         occ_iou_np = (occ_iou >= 0.5).cpu().numpy()
         occ_iou_hat_np = (p_out.probs >= threshold).cpu().numpy()
@@ -109,7 +111,7 @@ class Trainer(BaseTrainer):
                 batch_size, *points_voxels.size())
             points_voxels = points_voxels.to(device)
             with torch.no_grad():
-                p_out, points_out = self.model(points_voxels, inputs,
+                p_out, p_psgn_out, points_out = self.model(points_voxels, inputs,
                                    sample=self.eval_sample, **kwargs)
 
             voxels_occ_np = (voxels_occ >= 0.5).cpu().numpy()
@@ -138,7 +140,7 @@ class Trainer(BaseTrainer):
 
         kwargs = {}
         with torch.no_grad():
-            p_r, points_out = self.model(p, inputs, sample=self.eval_sample, **kwargs)
+            p_r, p_r_psgn, points_out = self.model(p, inputs, sample=self.eval_sample, **kwargs)
 
         occ_hat = p_r.probs.view(batch_size, *shape)
         voxels_out = (occ_hat >= self.threshold).cpu().numpy()
@@ -155,11 +157,11 @@ class Trainer(BaseTrainer):
 
         batch_size = inputs.size(0)
         for i in trange(batch_size):
-            input_img_path = os.path.join(self.vis_dir, '%03d_in.png' % i)
-            vis.visualize_data(
-                inputs[i].cpu(), self.input_type, input_img_path)
-            out_file = os.path.join(self.vis_dir, '%03d.png' % i)
-            out_file_gt = os.path.join(self.vis_dir, '%03d_gt.png' % i)
+            # input_img_path = os.path.join(self.vis_dir, '%03d_in.png' % i)
+            # vis.visualize_data(
+            #     inputs[i].cpu(), self.input_type, input_img_path)
+            out_file = os.path.join(self.vis_dir, '%03d_psgn.png' % i)
+            out_file_gt = os.path.join(self.vis_dir, '%03d_psgn_gt.png' % i)
             vis.visualize_pointcloud(points_out[i], out_file=out_file)
             vis.visualize_pointcloud(points_gt[i], out_file=out_file_gt)
 
@@ -188,7 +190,14 @@ class Trainer(BaseTrainer):
 
 
         # General points
-        logits, points_out = self.model.decode(p, z, c, **kwargs)
+        logits, logits_psgn, points_out = self.model.decode(p, z, c, **kwargs)
+        if logits_psgn != None:
+            logits_psgn = logits_psgn.logits
+            gt = torch.ones(logits_psgn.size(0), logits_psgn.size(1)) * self.threshold
+            gt = gt.to(self.device)
+            consistency_loss = F.binary_cross_entropy_with_logits(
+                logits_psgn, gt, reduction='none')
+            loss = loss + consistency_loss.sum(-1).mean()
 
         loss = loss + 10000 * chamfer_distance(points, points_out).mean()
 

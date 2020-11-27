@@ -24,6 +24,7 @@ test:
   threshold: 0.2
   eval_mesh: true
   eval_pointcloud: false
+  model_file: /home/wenjing/Desktop/unconditional/model_best.pt
 generation:
   batch_size: 100000
   refine: false
@@ -34,3 +35,4 @@ generation:
   copy_input: false
   generate_mesh: true
   generate_pointcloud: true
+  generation_dir: pretrained
