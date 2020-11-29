@@ -12,8 +12,8 @@ model:
   c_dim: 256
   z_dim: 0
 training:
-  out_dir:  /home/wenjing/storage/out/onet
-#  out_dir:  out/img/onet
+#  out_dir:  /home/wenjing/storage/out/onet
+  out_dir:  out/img/onet
   batch_size: 64
   model_selection_metric: iou
   model_selection_mode: maximize

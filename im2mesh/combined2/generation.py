@@ -102,6 +102,62 @@ class Generator3D(object):
         distances = np.array(distances)
         dist_max = np.amax(distances)
         return dist_max
+    def partial_mesh(self, points_psgn, z, c=None, **kwargs):
+        threshold = np.log(self.threshold) - np.log(1. - self.threshold)
+        box_size = 0.03
+        nx = 2
+        upsampling_steps = 1
+        points_psgn = points_psgn.squeeze(0)
+        vertices = []
+        faces = []
+        vertices_index = 0
+        if self.with_normals:
+            normals = []
+        else:
+            normals = None
+        for p in points_psgn:
+
+            if upsampling_steps == 0:
+                pointsf = box_size * make_3d_grid(
+                    (-0.5,) * 3, (0.5,) * 3, (nx,) * 3
+                )
+                # print('@@@@@@@@@@@@@', p)
+                pointsf = torch.FloatTensor(pointsf).to(self.device) + p
+                # print('%%%%%%%%%%%%%%', pointsf)
+                values = self.eval_points(pointsf, z, c, **kwargs).cpu().numpy()
+                value_grid = values.reshape(nx, nx, nx)
+            else:
+                mesh_extractor = MISE(
+                    nx, upsampling_steps, threshold)
+                points = mesh_extractor.query()
+                while points.shape[0] != 0:
+                    pointsf = torch.FloatTensor(points).to(self.device)
+                    # Normalize to bounding box
+                    pointsf = pointsf / mesh_extractor.resolution
+                    pointsf = box_size * (pointsf - 0.5) + p
+                    # print('################', mesh_extractor.resolution, pointsf)
+                    values = self.eval_points(
+                        pointsf, z, c, **kwargs).cpu().numpy()
+                    values = values.astype(np.float64)
+                    mesh_extractor.update(points, values)
+                    points = mesh_extractor.query()
+                value_grid = mesh_extractor.to_dense()
+                # print('%%%%%%%%%%%%%%%%%', value_grid.shape, value_grid)
+            vertices_p, faces_p, normal_p = self.extract_mesh2(p, value_grid, box_size, z, c)
+            faces_p = faces_p + vertices_index
+            vertices_index = len(vertices_p) + vertices_index
+            vertices.append(vertices_p)
+            faces.append(faces_p)
+            if self.with_normals:
+                normals.append(normal_p)
+
+        vertices = np.concatenate(vertices, axis=0)
+        faces = np.concatenate(faces, axis=0)
+
+        mesh = trimesh.Trimesh(vertices, faces,
+                               vertex_normals=normals,
+                               process=False)
+        return mesh
 
     def generate_from_latent(self, z, c=None,gt=False, stats_dict={}, **kwargs):
         ''' Generates mesh from latent.
@@ -111,58 +167,41 @@ class Generator3D(object):
             c (tensor): latent conditioned code c
             stats_dict (dict): stats dictionary
         '''
-        # occ_psgn, points = self.model.decode2(z, c)
-        # points = points[0].cpu().numpy()
-        # print('###33333', points)
-
         threshold = np.log(self.threshold) - np.log(1. - self.threshold)
         t0 = time.time()
-        occ_psgn, points = self.model.decode2(z, c, **kwargs)
+        converge_steps = 0
+        if converge_steps == 0:
+            occ_psgn, points_psgn = self.model.decode2(z, c, **kwargs)
+        else:
+            points_psgn = self.model.decoder_psgn(z, c)
+            for i in range(converge_steps):
+                occ_psgn, points_psgn, normal = self.estimate_normals_oc(points_psgn, z, c)
+                step= normal.permute(0,2,1) * torch.sign(occ_psgn.logits - threshold)
+                points_psgn = points_psgn - 0.1 * step.permute(0,2,1)
+                # print('%%%%%%%%%%%%%%%%%%%', occ_psgn.probs-self.threshold)
 
-        # if require normal
-        # occ_psgn, points, normal = self.estimate_normals_oc(z, c)
-        # points = points - 0.001*normal
+        mesh = self.partial_mesh(points_psgn, z, c, **kwargs)
 
-        occ_psgn = occ_psgn.probs
-        # print('##################', occ_psgn.shape, points.shape)
-
-
-        points = points.squeeze(0).detach().cpu().numpy()
-        occ_psgn = occ_psgn.squeeze(0).detach().cpu().numpy()
-        mesh = meshlab_poisson(points)
-        in_points = points[occ_psgn>self.threshold]
-        # print('##########', in_points.shape)
-        out_points = points[occ_psgn<self.threshold]
-        # print('$$$$$$$$', out_points.shape)
-        # print('%%%%%%%%%5', points.shape)
-        max_min_dist = self.max_min_dist(points)
-        print('$$$$$$$$$$', max_min_dist)
-
-        # reso = 20
-        # box_size = 1 + self.padding
-        # nx = reso
-        # pointsf = box_size * make_3d_grid(
-        #     (-0.5,) * 3, (0.5,) * 3, (nx,) * 3
-        # )
-
-
+        # points_psgn = points_psgn.detach().cpu().numpy()
+        # occ_psgn = occ_psgn.squeeze(0).detach().cpu().numpy()
+        # # mesh = meshlab_poisson(points)
+        # in_points = points_psgn[occ_psgn>self.threshold]
+        # out_points = points_psgn[occ_psgn<self.threshold]
+        # max_min_dist = self.max_min_dist(points_psgn)
+        in_points = 0
+        out_points = 0
 
 
         mesh2 = 0
-        gt = True
         if gt == True:
             # Compute bounding box size
             box_size = 1 + self.padding
-
-
             # Shortcut
             if self.upsampling_steps == 0:
                 nx = self.resolution0
-                #############################
                 pointsf = box_size * make_3d_grid(
                     (-0.5,)*3, (0.5,)*3, (nx,)*3
                 )
-                ####################################
                 values = self.eval_points(pointsf, z, c, **kwargs).cpu().numpy()
                 value_grid = values.reshape(nx, nx, nx)
             else:
@@ -178,13 +217,11 @@ class Generator3D(object):
                     pointsf = pointsf / mesh_extractor.resolution
                     pointsf = box_size * (pointsf - 0.5)
                     # Evaluate model and update
-                    # print('@@@@@@@@@@@@@', pointsf.shape)
                     values = self.eval_points(
                         pointsf, z, c, **kwargs).cpu().numpy()
                     values = values.astype(np.float64)
                     mesh_extractor.update(points, values)
                     points = mesh_extractor.query()
-                    print('!!!!!!!!!!!!!', points.shape)
 
                 value_grid = mesh_extractor.to_dense()
 
@@ -194,7 +231,7 @@ class Generator3D(object):
             mesh2 = self.extract_mesh(value_grid, z, c, stats_dict=stats_dict)
         return mesh, mesh2, out_points, in_points
 
-    def estimate_normals_oc(self, z, c=None):
+    def estimate_normals_oc(self, points, z, c=None):
         ''' Estimates the normals by computing the gradient of the objective.
 
         Args:
@@ -205,7 +242,7 @@ class Generator3D(object):
         # device = self.device
         # z = z.unsqueeze(0)
         # occ_psgn, points = self.model.decode2(z, c)
-        points = self.model.decoder_psgn(z, c)
+
         points = points.detach()
         points.requires_grad_()
         occ_psgn = self.model.decode_original(points, z, c)
@@ -213,8 +250,9 @@ class Generator3D(object):
         ##################################
         out.backward()
         ##################################3
-        ni = points.grad.permute(0, 2, 1) * occ_psgn.logits
-        ni = ni.permute(0, 2, 1)
+        # ni = points.grad.permute(0, 2, 1) * occ_psgn.logits
+        # ni = ni.permute(0, 2, 1)
+        ni = points.grad
         ni = ni / torch.norm(ni, dim=-1, keepdim=True)**2
 
 
@@ -243,6 +281,33 @@ class Generator3D(object):
         occ_hat = torch.cat(occ_hats, dim=0)
 
         return occ_hat
+    def extract_mesh2(self, point, occ_hat, box_size, z, c=None):
+        n_x, n_y, n_z = occ_hat.shape
+        threshold = np.log(self.threshold) - np.log(1. - self.threshold)
+
+        # occ_hat_padded = np.pad(
+        #     occ_hat, 1, 'constant', constant_values=-1e6)
+        occ_hat_padded = occ_hat
+        vertices, triangles = libmcubes.marching_cubes(
+            occ_hat_padded, threshold)
+        # Strange behaviour in libmcubes: vertices are shifted by 0.5
+        vertices -= 0.5
+        # Undo padding
+        # vertices -= 1
+        # Normalize to bounding box
+        vertices /= np.array([n_x - 1, n_y - 1, n_z - 1])
+        vertices = box_size * (vertices - 0.5)
+
+        point = point.detach().cpu().numpy()
+        vertices = vertices + point
+
+        if self.with_normals and not vertices.shape[0] == 0:
+            normals = self.estimate_normals(vertices, z, c)
+
+        else:
+            normals = None
+
+        return vertices, triangles, normals
 
     def extract_mesh(self, occ_hat, z, c=None, stats_dict=dict()):
         ''' Extracts the mesh from the predicted occupancy grid.

@@ -1,6 +1,7 @@
 method: r2n2
 data:
-  path: /home/wenjing/storage/data/ShapeNet
+#  path: /home/wenjing/storage/data/ShapeNet
+  path: /home/wenjing/Downloads/ShapeNet
   img_folder: img_choy2016
   img_size: 224
 model:
@@ -10,7 +11,8 @@ model:
   c_dim: 256 
   z_dim: 0
 training:
-  out_dir: /home/wenjing/storage/r2n2
+  out_dir:  out/img/r2n2
+#  out_dir: /home/wenjing/storage/r2n2
   batch_size: 64
   model_selection_metric: iou
   model_selection_mode: maximize
