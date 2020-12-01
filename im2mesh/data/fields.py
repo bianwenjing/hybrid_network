@@ -159,10 +159,10 @@ class PointsField(Field):
             points = points.astype(np.float32)
 
         occupancies = points_dict['occupancies']
+
         if self.unpackbits:
             occupancies = np.unpackbits(occupancies)[:points.shape[0]]
         occupancies = occupancies.astype(np.float32)
-
         data = {
             None: points,
             'occ': occupancies,
@@ -177,6 +177,50 @@ class PointsField(Field):
 
         return data
 
+class RayField(Field):
+    ''' Voxel field class.
+
+    It provides the class used for voxel-based data.
+
+    Args:
+        file_name (str): file name
+        transform (list): list of transformations applied to data points
+    '''
+    def __init__(self, file_name, transform=None, with_transforms=False,):
+        self.file_name = file_name
+        self.transform = transform
+        self.with_transforms = with_transforms
+
+    def load(self, model_path, idx, category):
+        ''' Loads the data point.
+
+        Args:
+            model_path (str): path to model
+            idx (int): ID of data point
+            category (int): index of category
+        '''
+        file_path = os.path.join(model_path, self.file_name)
+
+        with open(file_path, 'rb') as f:
+            voxels = binvox_rw.read_as_3d_array(f)
+        voxels = voxels.data.astype(np.float32)
+        points_xy = []
+        for i in np.linspace(-0.5, 0.5, num=voxels.shape[0]):
+            for j in np.linspace(-0.5, 0.5, num=voxels.shape[1]):
+                points_xy.append([i, j])
+        points_xy = np.array(points_xy).astype(np.float32)
+        points_xy += 1e-4 * np.random.randn(*points_xy.shape)
+
+        occupancies_z = vo
+        data = {
+            None: points_xy,
+            'occ': occupancies_z,
+        }
+
+        if self.transform is not None:
+            voxels = self.transform(voxels)
+
+        return voxels
 
 class VoxelsField(Field):
     ''' Voxel field class.

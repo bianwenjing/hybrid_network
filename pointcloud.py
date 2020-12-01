@@ -51,10 +51,15 @@ def fix_K_camera(K, img_size=137):
 
 data = np.load('/home/wenjing/Downloads/ShapeNet/03001627/1a6f615e8b1b5ae4dbbc9440457e303e/points.npz')
 lst = data.files
-for item in lst:
-    print(item)
-    print(data[item], data[item].shape)
-# points = torch.tensor(data['points'].astype(np.float32)).unsqueeze(0)
+# for item in lst:
+#     print(item)
+#     print(data[item], data[item].shape)
+points = data['points'].astype(np.float32)
+x = []
+for i in range(len(points)):
+    x.append(points[i][1])
+x=np.array(x)
+print(x.shape, np.amax(x))
 # loc = torch.tensor(data['loc'].astype(np.float32)).unsqueeze(0)
 # scale = torch.tensor(data['scale'].astype(np.float32))
 # # print(points.shape)
