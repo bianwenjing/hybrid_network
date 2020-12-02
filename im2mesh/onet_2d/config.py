@@ -3,7 +3,7 @@ import torch.distributions as dist
 from torch import nn
 import os
 from im2mesh.encoder import encoder_dict
-from im2mesh.onet import models, training, generation
+from im2mesh.onet_2d import models, training, generation
 from im2mesh import data
 from im2mesh import config
 
@@ -25,8 +25,9 @@ def get_model(cfg, device=None, dataset=None, **kwargs):
     decoder_kwargs = cfg['model']['decoder_kwargs']
     encoder_kwargs = cfg['model']['encoder_kwargs']
     encoder_latent_kwargs = cfg['model']['encoder_latent_kwargs']
+    z_resolution = cfg['model']['z_resolution']
 
-    decoder = models.decoder_dict[decoder](
+    decoder = models.decoder_dict[decoder](z_resolution=z_resolution,
         dim=dim, z_dim=z_dim, c_dim=c_dim,
         **decoder_kwargs
     )
@@ -133,21 +134,21 @@ def get_data_fields(mode, cfg):
 
     fields = {}
     fields['points'] = data.RayField(
-        cfg['data']['points_file'], points_transform,
+        cfg['data']['voxels_file'], points_transform,
         with_transforms=with_transforms,
-        unpackbits=cfg['data']['points_unpackbits'],
     )
 
-    if mode in ('val', 'test'):
-        points_iou_file = cfg['data']['points_iou_file']
-        voxels_file = cfg['data']['voxels_file']
-        if points_iou_file is not None:
-            fields['points_iou'] = data.PointsField(
-                points_iou_file,
-                with_transforms=with_transforms,
-                unpackbits=cfg['data']['points_unpackbits'],
-            )
-        if voxels_file is not None:
-            fields['voxels'] = data.VoxelsField(voxels_file)
+    # if mode in ('val', 'test'):
+        # points_iou_file = cfg['data']['points_iou_file']
+        # voxels_file = cfg['data']['voxels_file']
+        # if points_iou_file is not None:
+        #     fields['points_iou'] = data.PointsField(
+        #         points_iou_file,
+        #         with_transforms=with_transforms,
+        #         unpackbits=cfg['data']['points_unpackbits'],
+        #     )
+        # if voxels_file is not None:
+        #     fields['voxels'] = data.VoxelsField(voxels_file)
+
 
     return fields

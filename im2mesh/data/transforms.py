@@ -74,7 +74,9 @@ class SubsamplePoints(object):
             data (dictionary): data dictionary
         '''
         points = data[None]
+        # print('$$$$$$$$$$$$', points.shape)
         occ = data['occ']
+        # print('@@@@@@@@@@@@@@', occ.shape)
 
         data_out = data.copy()
         if isinstance(self.N, int):

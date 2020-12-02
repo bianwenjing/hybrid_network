@@ -211,16 +211,17 @@ class RayField(Field):
         points_xy = np.array(points_xy).astype(np.float32)
         points_xy += 1e-4 * np.random.randn(*points_xy.shape)
 
-        occupancies_z = vo
+        voxels = voxels.transpose(2, 1, 0)
+        occupancies_z = voxels.reshape(1024, 32)
         data = {
             None: points_xy,
             'occ': occupancies_z,
         }
 
         if self.transform is not None:
-            voxels = self.transform(voxels)
+            data = self.transform(data)
 
-        return voxels
+        return data
 
 class VoxelsField(Field):
     ''' Voxel field class.

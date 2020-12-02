@@ -4,7 +4,7 @@ import torch
 from torch.nn import functional as F
 from torch import distributions as dist
 from im2mesh.common import (
-    compute_iou, make_3d_grid
+    compute_iou, make_2d_grid
 )
 from im2mesh.utils import visualize as vis
 from im2mesh.training import BaseTrainer
@@ -132,17 +132,19 @@ class Trainer(BaseTrainer):
         batch_size = data['points'].size(0)
         inputs = data.get('inputs', torch.empty(batch_size, 0)).to(device)
 
-        shape = (32, 32, 32)
-        p = make_3d_grid([-0.5] * 3, [0.5] * 3, shape).to(device)
+        shape = (32, 32)
+        p = make_2d_grid([-0.5] * 2, [0.5] * 2, shape).to(device)
         p = p.expand(batch_size, *p.size())
 
         kwargs = {}
 
-        # print('#########3', p.shape)  (12, 32^3, 3)
+        # print('#########3', p.shape)  #(12, 32^2, 2)
         with torch.no_grad():
             p_r = self.model(p, inputs, sample=self.eval_sample, **kwargs)
 
-        occ_hat = p_r.probs.view(batch_size, *shape)
+
+        shape2 = (32, 32, 32)
+        occ_hat = p_r.probs.view(batch_size, *shape2)
         voxels_out = (occ_hat >= self.threshold).cpu().numpy()
 
         for i in trange(batch_size):
@@ -161,7 +163,7 @@ class Trainer(BaseTrainer):
         device = self.device
         p_xy = data.get('points').to(device)
         occ_z = data.get('points.occ').to(device)
-        inputs = data.get('inputs', torch.empty(p.size(0), 0)).to(device)
+        inputs = data.get('inputs', torch.empty(p_xy.size(0), 0)).to(device)
 
         kwargs = {}
 
@@ -173,15 +175,18 @@ class Trainer(BaseTrainer):
         kl = dist.kl_divergence(q_z, self.model.p0_z).sum(dim=-1)
         loss = kl.mean()
 
-        # print('########3333', p.shape)  [64, 2048, 3]
+
+        # print('########3333', p_xy.shape)  [64, 2048, 2]
 
 
         # General points
         logits = self.model.decode(p_xy, z, c, **kwargs).logits
-        # print('########', p.size(1))
-        # print('$$$$$$', logits.shape)
+
+        occ_z = occ_z.transpose(1,2)
+
+
         loss_i = F.binary_cross_entropy_with_logits(
-            logits, occ, reduction='none')
+            logits, occ_z, reduction='none')
         loss = loss + loss_i.sum(-1).mean()
 
         return loss

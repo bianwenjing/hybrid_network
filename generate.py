@@ -147,7 +147,7 @@ for it, data in enumerate(tqdm(test_loader)):
         out_file_dict['gt'] = modelpath
 
     if generate_mesh:
-        gt = False
+        gt = True
         in_out = False
         t0 = time.time()
         out = generator.generate_mesh(data, gt)
