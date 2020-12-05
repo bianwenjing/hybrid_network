@@ -34,6 +34,7 @@ def get_model(cfg, device=None, dataset=None, **kwargs):
 
     if z_dim != 0:
         encoder_latent = models.encoder_latent_dict[encoder_latent](
+            z_resolution=z_resolution,
             dim=dim, z_dim=z_dim, c_dim=c_dim,
             **encoder_latent_kwargs
         )
@@ -138,17 +139,16 @@ def get_data_fields(mode, cfg):
         with_transforms=with_transforms,
     )
 
-    # if mode in ('val', 'test'):
-        # points_iou_file = cfg['data']['points_iou_file']
-        # voxels_file = cfg['data']['voxels_file']
-        # if points_iou_file is not None:
-        #     fields['points_iou'] = data.PointsField(
-        #         points_iou_file,
-        #         with_transforms=with_transforms,
-        #         unpackbits=cfg['data']['points_unpackbits'],
-        #     )
-        # if voxels_file is not None:
-        #     fields['voxels'] = data.VoxelsField(voxels_file)
+    if mode in ('val', 'test'):
+        points_iou_file = cfg['data']['voxels_file']
+        voxels_file = cfg['data']['voxels_file']
+        if points_iou_file is not None:
+            fields['points_iou'] = data.RayField(
+                points_iou_file,
+                with_transforms=with_transforms,
+            )
+        if voxels_file is not None:
+            fields['voxels'] = data.VoxelsField(voxels_file)
 
 
     return fields

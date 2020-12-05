@@ -9,6 +9,7 @@ data:
   points_subsample: 2048
 
   pointcloud_target_n: 1024
+  classes: ['03001627']
 model:
   encoder_latent: null
   decoder: cbatchnorm
@@ -57,4 +58,4 @@ generation:
 
   generate_pointcloud: false
   generate_mesh: true
-  generation_dir: pretrained
+  generation_dir: pretrained_onet

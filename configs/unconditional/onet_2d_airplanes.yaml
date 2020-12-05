@@ -1,0 +1,30 @@
+method: onet_2d
+data:
+  classes: ['02691156']
+  input_type: null
+  path: /home/wenjing/Downloads/ShapeNet
+  points_subsample: 1024
+  dim: 2
+model:
+  encoder_latent: simple
+  decoder: simple
+  encoder: null
+  c_dim: 0
+  z_dim: 128
+  z_resolution: 32
+training:
+  out_dir:  out/unconditional/onet_2d_airplanes
+  batch_size: 64
+  eval_sample: true
+test:
+  threshold: 0.2
+  eval_mesh: true
+  eval_pointcloud: false
+generation:
+  batch_size: 100000
+  refine: false
+  n_x: 128
+  n_z: 1
+  use_sampling: true
+  copy_groundtruth: false
+  copy_input: false

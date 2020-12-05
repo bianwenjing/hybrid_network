@@ -63,11 +63,10 @@ class Trainer(BaseTrainer):
         eval_dict = {}
 
         # Compute elbo
-        points = data.get('points').to(device)
-        occ = data.get('points.occ').to(device)
+        points_xy = data.get('points').to(device)
+        occ_z = data.get('points.occ').to(device)
 
-        inputs = data.get('inputs', torch.empty(points.size(0), 0)).to(device)
-        # inputs = data.get('inputs').to(device)
+        inputs = data.get('inputs', torch.empty(points_xy.size(0), 0)).to(device)
         voxels_occ = data.get('voxels')
 
         points_iou = data.get('points_iou').to(device)
@@ -78,14 +77,14 @@ class Trainer(BaseTrainer):
 
         with torch.no_grad():
             elbo, rec_error, kl = self.model.compute_elbo(
-                points, occ, inputs, **kwargs)
+                points_xy, occ_z, inputs, **kwargs)
 
         eval_dict['loss'] = -elbo.mean().item()
         eval_dict['rec_error'] = rec_error.mean().item()
         eval_dict['kl'] = kl.mean().item()
 
         # Compute iou
-        batch_size = points.size(0)
+        batch_size = points_xy.size(0)
 
         # print('@@@@@@@@@@', points_iou.shape) (10, 100000, 3)
 
@@ -102,8 +101,8 @@ class Trainer(BaseTrainer):
         # Estimate voxel iou
         if voxels_occ is not None:
             voxels_occ = voxels_occ.to(device)
-            points_voxels = make_3d_grid(
-                (-0.5 + 1/64,) * 3, (0.5 - 1/64,) * 3, (32,) * 3)
+            points_voxels = make_2d_grid(
+                (-0.5 + 1/64,) * 2, (0.5 - 1/64,) * 2, (32,) * 2)
             points_voxels = points_voxels.expand(
                 batch_size, *points_voxels.size())
             points_voxels = points_voxels.to(device)
@@ -135,6 +134,7 @@ class Trainer(BaseTrainer):
         shape = (32, 32)
         p = make_2d_grid([-0.5] * 2, [0.5] * 2, shape).to(device)
         p = p.expand(batch_size, *p.size())
+        # print('########', p.shape)  [12, 1024, 2]
 
         kwargs = {}
 
@@ -142,7 +142,7 @@ class Trainer(BaseTrainer):
         with torch.no_grad():
             p_r = self.model(p, inputs, sample=self.eval_sample, **kwargs)
 
-
+        # print('$$$$$$$$$$$$$$', p_r.probs.shape) [12, 32, 1024]
         shape2 = (32, 32, 32)
         occ_hat = p_r.probs.view(batch_size, *shape2)
         voxels_out = (occ_hat >= self.threshold).cpu().numpy()
@@ -181,9 +181,10 @@ class Trainer(BaseTrainer):
 
         # General points
         logits = self.model.decode(p_xy, z, c, **kwargs).logits
+        # print('$$$$$$$$$$$$', logits.shape) #[64, 1024, 32]
+        # print('###########', occ_z.shape)
 
-        occ_z = occ_z.transpose(1,2)
-
+        # occ_z = occ_z.transpose(1,2)
 
         loss_i = F.binary_cross_entropy_with_logits(
             logits, occ_z, reduction='none')

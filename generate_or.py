@@ -12,14 +12,6 @@ from im2mesh.checkpoints import CheckpointIO
 from im2mesh.utils.io import export_pointcloud
 from im2mesh.utils.visualize import visualize_data
 from im2mesh.utils.voxels import VoxelGrid
-from plyfile import PlyData, PlyElement
-import numpy as np
-
-def write_ply(save_path, points, text=True):
-    points = [(points[i, 0], points[i, 1], points[i, 2]) for i in range(points.shape[0])]
-    vertex = np.array(points, dtype=[('x', 'f4'), ('y', 'f4'),('z', 'f4')])
-    el = PlyElement.describe(vertex, 'vertex', comments=['vertices'])
-    PlyData([el], text=text).write(save_path)
 
 parser = argparse.ArgumentParser(
     description='Extract meshes from occupancy process.'
@@ -147,34 +139,21 @@ for it, data in enumerate(tqdm(test_loader)):
         out_file_dict['gt'] = modelpath
 
     if generate_mesh:
-        gt = False
-        in_out = False
         t0 = time.time()
-        out = generator.generate_mesh(data, gt)
+        out = generator.generate_mesh(data)
         time_dict['mesh'] = time.time() - t0
 
         # Get statistics
         try:
-            mesh_psgn, mesh_onet, out_points, in_points, stats_dict = out
+            mesh, stats_dict = out
         except TypeError:
-            mesh_psgn, mesh_onet, out_points, in_points, stats_dict = out, {}
+            mesh, stats_dict = out, {}
         time_dict.update(stats_dict)
 
         # Write output
         mesh_out_file = os.path.join(mesh_dir, '%s.off' % modelname)
-        mesh_psgn.export(mesh_out_file)
+        mesh.export(mesh_out_file)
         out_file_dict['mesh'] = mesh_out_file
-
-        if in_out == True:
-            out_points_file = os.path.join(mesh_dir, '%s_out.ply' % modelname)
-            write_ply(out_points_file, out_points)
-            in_points_file = os.path.join(mesh_dir, '%s_in.ply' % modelname)
-            write_ply(in_points_file, in_points)
-
-        #output onet
-        if gt==True:
-            mesh_out_file_onet = os.path.join(mesh_dir, '%s_onet.off' % modelname)
-            mesh_onet.export(mesh_out_file_onet)
 
     if generate_pointcloud:
         t0 = time.time()

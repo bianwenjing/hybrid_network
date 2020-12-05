@@ -21,7 +21,7 @@ class Encoder(nn.Module):
         dim (int): input dimension
         leaky (bool): whether to use leaky ReLUs
     '''
-    def __init__(self, z_dim=128, c_dim=128, dim=3, leaky=False):
+    def __init__(self, z_resolution, z_dim=128, c_dim=128, dim=2, leaky=False):
         super().__init__()
         self.z_dim = z_dim
         self.c_dim = c_dim
@@ -32,7 +32,8 @@ class Encoder(nn.Module):
         if c_dim != 0:
             self.fc_c = nn.Linear(c_dim, 128)
 
-        self.fc_0 = nn.Linear(1, 128)
+        # self.fc_0 = nn.Linear(1, 128)
+        self.fc_0 = nn.Linear(z_resolution, 128)
         self.fc_1 = nn.Linear(128, 128)
         self.fc_2 = nn.Linear(256, 128)
         self.fc_3 = nn.Linear(256, 128)
@@ -53,7 +54,8 @@ class Encoder(nn.Module):
         batch_size, T, D = p.size()
 
         # output size: B x T X F
-        net = self.fc_0(x.unsqueeze(-1))
+        net = self.fc_0(x)
+
         net = net + self.fc_pos(p)
 
         if self.c_dim != 0:

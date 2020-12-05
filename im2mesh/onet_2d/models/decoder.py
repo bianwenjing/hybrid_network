@@ -20,7 +20,7 @@ class Decoder(nn.Module):
         leaky (bool): whether to use leaky ReLUs
     '''
 
-    def __init__(self, dim=3, z_dim=128, c_dim=128,
+    def __init__(self, z_resolution, dim=2, z_dim=128, c_dim=128,
                  hidden_size=128, leaky=False):
         super().__init__()
         self.z_dim = z_dim
@@ -41,7 +41,7 @@ class Decoder(nn.Module):
         self.block3 = ResnetBlockFC(hidden_size)
         self.block4 = ResnetBlockFC(hidden_size)
 
-        self.fc_out = nn.Linear(hidden_size, 1)
+        self.fc_out = nn.Linear(hidden_size, z_resolution)
 
         if not leaky:
             self.actvn = F.relu
@@ -68,7 +68,7 @@ class Decoder(nn.Module):
         net = self.block4(net)
 
         out = self.fc_out(self.actvn(net))
-        out = out.squeeze(-1)
+        # out = out.squeeze(-1)
 
         return out
 
@@ -105,6 +105,7 @@ class DecoderCBatchNorm(nn.Module):
             self.bn = CBatchNorm1d_legacy(c_dim, hidden_size)
 
         self.fc_out = nn.Conv1d(hidden_size, z_resolution, 1)
+        # self.fc_out = nn.Linear(hidden_size, z_resolution)
 
         if not leaky:
             self.actvn = F.relu
@@ -127,8 +128,9 @@ class DecoderCBatchNorm(nn.Module):
         net = self.block4(net, c)
 
 
-
+        # print('#############', net.shape, self.actvn(self.bn(net, c)).shape) (64, 256, 1024)
         out = self.fc_out(self.actvn(self.bn(net, c)))
+        out = out.transpose(1,2)
 
         return out
 
