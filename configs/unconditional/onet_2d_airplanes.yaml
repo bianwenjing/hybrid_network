@@ -20,6 +20,8 @@ test:
   threshold: 0.2
   eval_mesh: true
   eval_pointcloud: false
+  model_file: /home/wenjing/Desktop/onet_2d/uncon/model_best.pt
+
 generation:
   batch_size: 100000
   refine: false
@@ -28,3 +30,6 @@ generation:
   use_sampling: true
   copy_groundtruth: false
   copy_input: false
+
+  upsampling_steps: 0
+  resolution_0: 16

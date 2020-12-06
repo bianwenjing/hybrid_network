@@ -13,13 +13,14 @@ model:
   z_dim: 128
   z_resolution: 32
 training:
-  out_dir:  /home/wenjing/storage/out/unconditional/onet_2d_airplanes
+  out_dir:  /home/wenjing/storage/out/unconditional/onet_2d_airplanes_mean_sum
   batch_size: 64
   eval_sample: true
 test:
   threshold: 0.2
   eval_mesh: true
   eval_pointcloud: false
+
 generation:
   batch_size: 100000
   refine: false
@@ -28,3 +29,4 @@ generation:
   use_sampling: true
   copy_groundtruth: false
   copy_input: false
+
