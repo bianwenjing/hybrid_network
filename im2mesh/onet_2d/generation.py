@@ -102,12 +102,13 @@ class Generator3D(object):
 
         t0 = time.time()
         # Compute bounding box size
+        self.padding = 0
         box_size = 1 + self.padding
         nz = self.z_resolution
         # Shortcut
         if self.upsampling_steps == 0:
             nx = self.resolution0
-            #############################
+            ############################
             pointsf = box_size * make_2d_grid(
                 (-0.5,)*2, (0.5,)*2, (nx,)*2
             )
@@ -115,13 +116,10 @@ class Generator3D(object):
             ####################################
             values = self.eval_points(pointsf, z, c, **kwargs).cpu().numpy()
 
-            # print('$$$$$$$$$$$', values.shape)
             value_grid = values.reshape(nx, nx, nz)
-            print('########', value_grid.shape)
         else:
             mesh_extractor = MISE(
                 self.resolution0, self.upsampling_steps, threshold)
-
             points = mesh_extractor.query()
 
             while points.shape[0] != 0:
@@ -141,7 +139,7 @@ class Generator3D(object):
 
         # Extract mesh
         stats_dict['time (eval points)'] = time.time() - t0
-
+        value_grid = value_grid.transpose(2, 1, 0)
         mesh = self.extract_mesh(value_grid, z, c, stats_dict=stats_dict)
         return mesh
 

@@ -86,13 +86,15 @@ class Trainer(BaseTrainer):
         # Compute iou
         batch_size = points_xy.size(0)
 
-        # print('@@@@@@@@@@', points_iou.shape) (10, 100000, 3)
+        # print('@@@@@@@@@@', points_iou.shape) #(10, 100000, 3)
 
         with torch.no_grad():
             p_out = self.model(points_iou, inputs,
                                sample=self.eval_sample, **kwargs)
 
+
         occ_iou_np = (occ_iou >= 0.5).cpu().numpy()
+        # print('$$$$$$$$$$$$$', occ_iou_np.shape)
         occ_iou_hat_np = (p_out.probs >= threshold).cpu().numpy()
         iou = compute_iou(occ_iou_np, occ_iou_hat_np).mean()
         eval_dict['iou'] = iou
@@ -103,18 +105,22 @@ class Trainer(BaseTrainer):
             voxels_occ = voxels_occ.to(device)
             points_voxels = make_2d_grid(
                 (-0.5 + 1/64,) * 2, (0.5 - 1/64,) * 2, (32,) * 2)
+            # points_voxels = make_2d_grid(
+            #     (-0.5,) * 2, (0.5,) * 2, (32,) * 2)
             points_voxels = points_voxels.expand(
                 batch_size, *points_voxels.size())
             points_voxels = points_voxels.to(device)
 
-            # print('$$$$$$$$$44', points_voxels.shape)  (10, 32768, 3)
+            # print('$$$$$$$$$44', points_voxels.shape)  #(10, 32768, 3)
             with torch.no_grad():
                 p_out = self.model(points_voxels, inputs,
                                    sample=self.eval_sample, **kwargs)
 
+            voxels_occ = voxels_occ.permute(0, 3, 2, 1)
             voxels_occ_np = (voxels_occ >= 0.5).cpu().numpy()
             occ_hat_np = (p_out.probs >= threshold).cpu().numpy()
             iou_voxels = compute_iou(voxels_occ_np, occ_hat_np).mean()
+            # print('$$$$$$$$$$$$$$$$$', iou_voxels)
 
             eval_dict['iou_voxels'] = iou_voxels
 
@@ -184,7 +190,7 @@ class Trainer(BaseTrainer):
         # print('$$$$$$$$$$$$', logits.shape) #[64, 1024, 32]
         # print('###########', occ_z.shape)
 
-        # occ_z = occ_z.transpose(1,2)
+
 
         loss_i = F.binary_cross_entropy_with_logits(
             logits, occ_z, reduction='none')

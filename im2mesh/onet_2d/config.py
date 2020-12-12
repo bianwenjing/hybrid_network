@@ -133,6 +133,27 @@ def get_data_fields(mode, cfg):
     '''
     points_transform = data.SubsamplePoints(cfg['data']['points_subsample'])
     with_transforms = cfg['model']['use_camera']
+    z_resolution = cfg['model']['z_resolution']
+    # fields = {}
+    # fields['points'] = data.RayField2(
+    #     cfg['data']['points_file'], points_transform,
+    #     z_resolution=z_resolution,
+    #     with_transforms=with_transforms,
+    #     unpackbits=cfg['data']['points_unpackbits'],
+    # )
+    #
+    # if mode in ('val', 'test'):
+    #     points_iou_file = cfg['data']['points_iou_file']
+    #     voxels_file = cfg['data']['voxels_file']
+    #     if points_iou_file is not None:
+    #         fields['points_iou'] = data.RayField2(
+    #             points_iou_file,
+    #             z_resolution=z_resolution,
+    #             with_transforms=with_transforms,
+    #             unpackbits=cfg['data']['points_unpackbits'],
+    #         )
+    #     if voxels_file is not None:
+    #         fields['voxels'] = data.VoxelsField(voxels_file)
 
     fields = {}
     fields['points'] = data.RayField(

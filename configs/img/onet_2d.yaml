@@ -6,6 +6,7 @@ data:
   img_size: 224
   points_subsample: 1024
   dim: 2
+  classes: ['03001627']
 model:
   encoder_latent: null
   decoder: cbatchnorm
@@ -25,12 +26,14 @@ test:
   threshold: 0.2
   eval_mesh: true
   eval_pointcloud: false
-  model_file: /home/wenjing/occupancy_networks-master/out/img/onet_2d/model.pt
+  model_file: /home/wenjing/Desktop/onet_2d/model_best.pt
 generation:
   batch_size: 100000
   refine: false
   n_x: 128
   n_z: 1
   resolution_0: 32
-  upsampling_steps: 2
+  upsampling_steps: 0
   generation_dir: pretrained
+
+

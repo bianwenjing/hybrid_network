@@ -20,6 +20,8 @@ for c in ${CLASSES[@]}; do
   echo "Converting meshes to OFF"
   lsfilter $input_path_c $build_path_c/0_in .off | parallel -P $NPROC --timeout $TIMEOUT \
      meshlabserver -i $input_path_c/{}/model.obj -o $build_path_c/0_in/{}.off;
+#  lsfilter $input_path_c $build_path_c/0_in .off | parallel -P $NPROC --timeout $TIMEOUT \
+#     xvfb-run --auto-servernum meshlabserver -i $input_path_c/{}/model.obj -o $build_path_c/0_in/{}.off;
   
   echo "Scaling meshes"
   python $MESHFUSION_PATH/1_scale.py \
@@ -27,13 +29,13 @@ for c in ${CLASSES[@]}; do
     --in_dir $build_path_c/0_in \
     --out_dir $build_path_c/1_scaled \
     --t_dir $build_path_c/1_transform
-  
+
   echo "Create depths maps"
   python $MESHFUSION_PATH/2_fusion.py \
     --mode=render --n_proc $NPROC \
     --in_dir $build_path_c/1_scaled \
     --out_dir $build_path_c/2_depth
-  
+
   echo "Produce watertight meshes"
   python $MESHFUSION_PATH/2_fusion.py \
     --mode=fuse --n_proc $NPROC \

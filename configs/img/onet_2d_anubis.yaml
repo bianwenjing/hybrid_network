@@ -4,8 +4,9 @@ data:
 #  path: /home/wenjing/Downloads/ShapeNet
   img_folder: img_choy2016
   img_size: 224
-  points_subsample: 1024
+  points_subsample: 64
   dim: 2
+#  classes: ['03001627']
 model:
   encoder_latent: null
   decoder: cbatchnorm
@@ -14,7 +15,7 @@ model:
   z_dim: 0
   z_resolution: 32
 training:
-  out_dir:  /home/wenjing/storage/onet_2d
+  out_dir:  /home/wenjing/storage/onet_2d_64
 #  out_dir:  out/img/onet_2d
   batch_size: 64
   model_selection_metric: iou
@@ -25,12 +26,12 @@ test:
   threshold: 0.2
   eval_mesh: true
   eval_pointcloud: false
-#  model_file: /home/wenjing/occupancy_networks-master/out/img/onet_2d/model.pt
+  model_file: /home/wenjing/storage/onet_2d/model_best.pt
 generation:
   batch_size: 100000
   refine: false
   n_x: 128
   n_z: 1
   resolution_0: 32
-  upsampling_steps: 2
+  upsampling_steps: 0
   generation_dir: pretrained

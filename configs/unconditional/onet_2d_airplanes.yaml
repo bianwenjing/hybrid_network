@@ -32,4 +32,4 @@ generation:
   copy_input: false
 
   upsampling_steps: 0
-  resolution_0: 16
+  resolution_0: 32

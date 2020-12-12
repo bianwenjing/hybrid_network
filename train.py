@@ -83,6 +83,7 @@ try:
     load_dict = checkpoint_io.load('/home/wenjing/oc_encoder.pt')
     # load_dict = checkpoint_io.load('/home/wenjing/uncon_encoder.pt')
     # load_dict = checkpoint_io.load('model.pt')
+    # load_dict = checkpoint_io.load('/home/wenjing/Desktop/onet_2d/model_best.pt')
 except FileExistsError:
     load_dict = dict()
 
