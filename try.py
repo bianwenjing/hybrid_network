@@ -18,24 +18,30 @@ import pickle
 # #             vertices
 #
 #
-import torch
-from torch import distributions as dist
+import os
+path = "/media/wenjing/Data2/ShapeNet.build/03001627/2_watertight/"
+filelist=os.listdir(path)
+for item in filelist:
+    if 'off' not in item:
+        print(item)
+# import torch
+# from torch import distributions as dist
+# #
+# # a = torch.tensor([5, 6])
+# # p_r = dist.Bernoulli(logits=a)
+# # print(p_r.probs)
 #
-# a = torch.tensor([5, 6])
-# p_r = dist.Bernoulli(logits=a)
-# print(p_r.probs)
-
-def removekey(d, listofkeys):
-    r = dict(d)
-    for key in listofkeys:
-        print('key: {} is removed'.format(key))
-        r.pop(key)
-    return r
-
-
-
-model_dict = torch.load('/home/wenjing/storage/psgn_encoder/model_best.pt')
-print(model_dict)
+# def removekey(d, listofkeys):
+#     r = dict(d)
+#     for key in listofkeys:
+#         print('key: {} is removed'.format(key))
+#         r.pop(key)
+#     return r
+#
+#
+#
+# model_dict = torch.load('/home/wenjing/storage/psgn_encoder/model_best.pt')
+# print(model_dict)
 # list = []
 # for key in model_dict['model']:
 #     if 'init' in key:

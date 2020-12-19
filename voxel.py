@@ -25,7 +25,8 @@ import im2mesh.common as common
 # points_y = np.expand_dims(np.random.choice(points_y, 12, replace=True), axis=1)
 # points = np.concatenate([points_x, points_y, points_z], axis=1)
 # print(points.shape)
-
+# data = np.load('/home/wenjing/storage/raw/ShapeNet.build/03001627/4_points/fffda9f09223a21118ff2740a556cc3.npz')
+# voxels = np.unpackbits(data['occupancies']).reshape(2500, 128)
 # points_xy = np.random.rand(16,2)
 # points_xy = np.repeat(points_xy,5,axis=0)
 # # print(points_xy.shape, points_xy)
@@ -36,10 +37,10 @@ import im2mesh.common as common
 # print(points_z.shape)
 # points = np.concatenate([points_xy, points_z], axis=1)
 # print(points.shape, points)
-file_path = '/home/wenjing/Downloads/ShapeNet/03001627/1a6f615e8b1b5ae4dbbc9440457e303e/model.binvox'
-with open(file_path, 'rb') as f:
-    voxels = binvox_rw.read_as_3d_array(f)
-print(voxels)
+# file_path = '/home/wenjing/Downloads/ShapeNet/03001627/1a6f615e8b1b5ae4dbbc9440457e303e/model.binvox'
+# with open(file_path, 'rb') as f:
+#     voxels = binvox_rw.read_as_3d_array(f)
+# print(voxels)
 # voxels = voxels.data.astype(np.float32)
 # voxels[:,15,15] = 0
 # print(voxels.shape, voxels)
@@ -47,7 +48,7 @@ print(voxels)
 # y = np.linspace(-0.5, 0.5,num=voxels.shape[1])
 # points_xy = np.concatenate([x,y], axis=0)
 # print(points_xy.shape, points_xy)
-
+a = np.array([0,0,1])
 
 # points_xy = []
 # for i in np.linspace(-0.5, 0.5,num=voxels.shape[0]):
@@ -76,16 +77,16 @@ print(voxels)
 # print(x)
 
 
-# # Create plot
-# fig = plt.figure()
-# ax = fig.gca(projection=Axes3D.name)
-# voxels = voxels.transpose(2, 0, 1)
-# voxels = voxels.transpose(1, 0, 2)
-# # voxels_2 = voxels_2.transpose(2, 0, 1)
-# ax.voxels(voxels, edgecolor='k')
-# # ax.voxels(voxels_2, edgecolor='r')
-# ax.set_xlabel('Z')
-# ax.set_ylabel('X')
-# ax.set_zlabel('Y')
-# # ax.view_init(elev=30, azim=45)
-# plt.show()
+# Create plot
+fig = plt.figure()
+ax = fig.gca(projection=Axes3D.name)
+voxels = voxels.transpose(2, 0, 1)
+voxels = voxels.transpose(1, 0, 2)
+# voxels_2 = voxels_2.transpose(2, 0, 1)
+ax.voxels(voxels, edgecolor='k')
+# ax.voxels(voxels_2, edgecolor='r')
+ax.set_xlabel('Z')
+ax.set_ylabel('X')
+ax.set_zlabel('Y')
+# ax.view_init(elev=30, azim=45)
+plt.show()

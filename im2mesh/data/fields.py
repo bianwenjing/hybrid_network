@@ -199,9 +199,12 @@ class RayField2(Field):
         points_dict = np.load(file_path)
         points_xy = points_dict['points_xy']
         # Break symmetry if given in float16:
+
+        # points_xy = (points_xy - 0.5) * 1.1
+
         if points_xy.dtype == np.float16:
-            points = points_xy.astype(np.float32)
-            points += 1e-4 * np.random.randn(*points.shape)
+            points_xy = points_xy.astype(np.float32)
+            points_xy += 1e-4 * np.random.randn(*points_xy.shape)
         else:
             points_xy = points_xy.astype(np.float32)
 
@@ -209,16 +212,16 @@ class RayField2(Field):
 
         if self.unpackbits:
             occupancies = np.unpackbits(occupancies)
-        occupancies = occupancies.astype(np.float32)
+
         occupancies = occupancies.reshape(2500, 128)
         interval = int(128/self.z_resolution)
         index = [i*interval for i in range(self.z_resolution)]
         occupancies_r = occupancies[:, index]
+        occupancies_r = occupancies_r.astype(np.float32)
         data = {
             None: points_xy,
             'occ': occupancies_r,
         }
-
         if self.with_transforms:
             data['loc'] = points_dict['loc'].astype(np.float32)
             data['scale'] = points_dict['scale'].astype(np.float32)

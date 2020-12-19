@@ -3,6 +3,30 @@ import torch
 from im2mesh.utils.libkdtree import KDTree
 import numpy as np
 
+def normalize_coordinate(p, padding=0.1):
+    ''' Normalize coordinate to [0, 1] for unit cube experiments
+
+    Args:
+        p (tensor): point
+        padding (float): conventional padding paramter of ONet for unit cube, so [-0.5, 0.5] -> [-0.55, 0.55]
+        plane (str): plane feature type, ['xz', 'xy', 'yz']
+    '''
+    # if plane == 'xz':
+    #     xy = p[:, :, [0, 2]]
+    # elif plane =='xy':
+    #     xy = p[:, :, [0, 1]]
+    # else:
+    #     xy = p[:, :, [1, 2]]
+
+    xy_new = p / (1 + padding + 10e-6) # (-0.5, 0.5)
+    xy_new = xy_new + 0.5 # range (0, 1)
+
+    # f there are outliers out of the range
+    if xy_new.max() >= 1:
+        xy_new[xy_new >= 1] = 1 - 10e-6
+    if xy_new.min() < 0:
+        xy_new[xy_new < 0] = 0.0
+    return xy_new
 
 def compute_iou(occ1, occ2):
     ''' Computes the Intersection over Union (IoU) value for two sets of

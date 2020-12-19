@@ -5,7 +5,7 @@ data:
   img_folder: img_choy2016
   img_size: 224 
   points_subsample: 2048
-  classes: ['03001627']
+#  classes: ['03001627']
 model:
   encoder_latent: null
   decoder: cbatchnorm

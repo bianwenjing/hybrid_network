@@ -102,7 +102,7 @@ class Generator3D(object):
 
         t0 = time.time()
         # Compute bounding box size
-        # self.padding = 0.1
+        self.padding = 0
         box_size = 1 + self.padding
         nz = self.z_resolution
         # Shortcut
@@ -116,11 +116,7 @@ class Generator3D(object):
             ####################################
             values = self.eval_points(pointsf, z, c, **kwargs).cpu().numpy()
             ###to do
-            #add the endpoint occupancy for z axis
-            end_pad = np.zeros((values.shape[0], 1)) - 1e6
-            values = np.concatenate((values, end_pad), axis=1)
-            nz  = nz + 1
-
+            ##add the endpoint occupancy for z axis
 
             value_grid = values.reshape(nx, nx, nz)
         else:
@@ -145,7 +141,7 @@ class Generator3D(object):
 
         # Extract mesh
         stats_dict['time (eval points)'] = time.time() - t0
-        # value_grid = value_grid.transpose(2, 1, 0)
+        value_grid = value_grid.transpose(2, 1, 0)
         mesh = self.extract_mesh(value_grid, z, c, stats_dict=stats_dict)
         return mesh
 

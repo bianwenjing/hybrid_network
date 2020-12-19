@@ -76,14 +76,6 @@ class Trainer(BaseTrainer):
         kwargs = {}
         # print('@@@@@@@@@@22', points.shape) (10, 2048, 3)
 
-        with torch.no_grad():
-            elbo, rec_error, kl = self.model.compute_elbo(
-                points_xy, occ_z, inputs, **kwargs)
-
-        eval_dict['loss'] = -elbo.mean().item()
-        eval_dict['rec_error'] = rec_error.mean().item()
-        eval_dict['kl'] = kl.mean().item()
-
         # Compute iou
         batch_size = points_xy.size(0)
 
@@ -174,23 +166,12 @@ class Trainer(BaseTrainer):
         inputs = data.get('inputs', torch.empty(p_xy.size(0), 0)).to(device)
 
         kwargs = {}
-        # print('%%%%%%%%%%%%%%', inputs.shape) [64, 3, 224, 224]
 
         c = self.model.encode_inputs(inputs)
-        # print('#############', c.shape) #[64, 256]
-        q_z = self.model.infer_z(p_xy, occ_z, c, **kwargs)
-        z = q_z.rsample()
-
-        # KL-divergence
-        kl = dist.kl_divergence(q_z, self.model.p0_z).sum(dim=-1)
-        loss = kl.mean()
-
-
-        # print('########3333', p_xy.shape)  [64, 2048, 2]
-
+        # print('###########', c.shape) # [32, 32, 224, 224]
 
         # General points
-        logits = self.model.decode(p_xy, z, c, **kwargs).logits
+        logits = self.model.decode(p_xy, c, **kwargs).logits
         # print('$$$$$$$$$$$$', logits.shape) #[64, 1024, 32]
         # print('###########', occ_z.shape)
 
@@ -198,6 +179,6 @@ class Trainer(BaseTrainer):
 
         loss_i = F.binary_cross_entropy_with_logits(
             logits, occ_z, reduction='none')
-        loss = loss + loss_i.sum(-1).mean()
+        loss = loss_i.sum(-1).mean()
 
         return loss

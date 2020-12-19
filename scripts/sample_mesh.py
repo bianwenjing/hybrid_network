@@ -68,6 +68,7 @@ def main(args):
     input_files = glob.glob(os.path.join(args.in_folder, '*.off'))
     if args.n_proc != 0:
         with Pool(args.n_proc) as p:
+            # print('$$$$$$$$$$$$$44', input_files)
             p.map(partial(process_path, args=args), input_files)
     else:
         for p in input_files:
@@ -187,7 +188,7 @@ def export_points(mesh, modelname, loc, scale, args):
     num_z = 128
     points_xy = np.random.rand(num_xy, 2)
     points_uniform_xy = np.repeat(points_xy, num_z, axis=0)
-    points_uniform_z = np.linspace(0, 1, num=num_z)
+    points_uniform_z = np.linspace(0, 1, num=num_z, endpoint=False)
     points_uniform_z = np.expand_dims(points_uniform_z, axis=1)
     points_uniform_z = np.repeat(points_uniform_z, num_xy, axis=1).transpose(1,0)
     points_uniform_z = np.reshape(points_uniform_z, (-1,1))
@@ -207,6 +208,7 @@ def export_points(mesh, modelname, loc, scale, args):
         dtype = np.float32
 
     # points = points.astype(dtype)
+    points_xy = boxsize * (points_xy - 0.5)
     points_xy = points_xy.astype(dtype)
 
     if args.packbits:

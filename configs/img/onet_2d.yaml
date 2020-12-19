@@ -1,7 +1,7 @@
 method: onet_2d
 data:
 #  path: /home/wenjing/storage/data/ShapeNet
-  path: /home/wenjing/Downloads/ShapeNet
+  path: /home/wenjing/Downloads/ShapeNet2
   img_folder: img_choy2016
   img_size: 224
   points_subsample: 1024
@@ -13,7 +13,7 @@ model:
   encoder: resnet18
   c_dim: 256
   z_dim: 0
-  z_resolution: 32
+  z_resolution: 64
 training:
 #  out_dir:  /home/wenjing/storage/out/onet
   out_dir:  out/img/onet_2d
@@ -26,13 +26,13 @@ test:
   threshold: 0.2
   eval_mesh: true
   eval_pointcloud: false
-  model_file: /home/wenjing/Desktop/onet_2d/model_best.pt
+  model_file: /home/wenjing/Desktop/onet_2d_64/model_best.pt
 generation:
   batch_size: 100000
   refine: false
   n_x: 128
   n_z: 1
-  resolution_0: 32
+  resolution_0: 128
   upsampling_steps: 0
   generation_dir: pretrained
 

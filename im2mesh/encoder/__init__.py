@@ -1,6 +1,6 @@
 from im2mesh.encoder import (
     conv, pix2mesh_cond, pointnet,
-    psgn_cond, r2n2, voxels, tensorflow
+    psgn_cond, r2n2, voxels, tensorflow, unet
 )
 
 
@@ -18,4 +18,5 @@ encoder_dict = {
     'voxel_simple': voxels.VoxelEncoder,
     'pixel2mesh_cond': pix2mesh_cond.Pix2mesh_Cond,
     'tensorflow': tensorflow.VGG16TensorflowAlign,
+    'unet': unet.UNet,
 }

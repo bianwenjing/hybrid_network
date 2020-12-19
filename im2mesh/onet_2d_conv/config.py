@@ -3,7 +3,7 @@ import torch.distributions as dist
 from torch import nn
 import os
 from im2mesh.encoder import encoder_dict
-from im2mesh.onet_2d import models, training, generation
+from im2mesh.onet_2d_conv import models, training, generation
 from im2mesh import data
 from im2mesh import config
 
@@ -18,28 +18,29 @@ def get_model(cfg, device=None, dataset=None, **kwargs):
     '''
     decoder = cfg['model']['decoder']
     encoder = cfg['model']['encoder']
-    encoder_latent = cfg['model']['encoder_latent']
+    # encoder_latent = cfg['model']['encoder_latent']
     dim = cfg['data']['dim']
-    z_dim = cfg['model']['z_dim']
+    # z_dim = cfg['model']['z_dim']
     c_dim = cfg['model']['c_dim']
     decoder_kwargs = cfg['model']['decoder_kwargs']
     encoder_kwargs = cfg['model']['encoder_kwargs']
-    encoder_latent_kwargs = cfg['model']['encoder_latent_kwargs']
+    # encoder_latent_kwargs = cfg['model']['encoder_latent_kwargs']
     z_resolution = cfg['model']['z_resolution']
+    padding = cfg['data']['padding']
 
     decoder = models.decoder_dict[decoder](z_resolution=z_resolution,
-        dim=dim, z_dim=z_dim, c_dim=c_dim,
+        dim=dim, c_dim=c_dim, padding=padding,
         **decoder_kwargs
     )
 
-    if z_dim != 0:
-        encoder_latent = models.encoder_latent_dict[encoder_latent](
-            z_resolution=z_resolution,
-            dim=dim, z_dim=z_dim, c_dim=c_dim,
-            **encoder_latent_kwargs
-        )
-    else:
-        encoder_latent = None
+    # if z_dim != 0:
+    #     encoder_latent = models.encoder_latent_dict[encoder_latent](
+    #         z_resolution=z_resolution,
+    #         dim=dim, z_dim=z_dim, c_dim=c_dim,
+    #         **encoder_latent_kwargs
+    #     )
+    # else:
+    #     encoder_latent = None
 
     if encoder == 'idx':
         encoder = nn.Embedding(len(dataset), c_dim)
@@ -51,9 +52,8 @@ def get_model(cfg, device=None, dataset=None, **kwargs):
     else:
         encoder = None
 
-    p0_z = get_prior_z(cfg, device)
     model = models.OccupancyNetwork(
-        decoder, encoder, encoder_latent, p0_z, device=device
+        decoder, encoder, device=device
     )
 
     return model
