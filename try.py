@@ -18,13 +18,13 @@ import pickle
 # #             vertices
 #
 #
-import os
-path = "/media/wenjing/Data2/ShapeNet.build/03001627/2_watertight/"
-filelist=os.listdir(path)
-for item in filelist:
-    if 'off' not in item:
-        print(item)
-# import torch
+# import os
+# path = "/media/wenjing/Data2/ShapeNet.build/03001627/2_watertight/"
+# filelist=os.listdir(path)
+# for item in filelist:
+#     if 'off' not in item:
+#         print(item)
+import torch
 # from torch import distributions as dist
 # #
 # # a = torch.tensor([5, 6])
@@ -40,10 +40,11 @@ for item in filelist:
 #
 #
 #
-# model_dict = torch.load('/home/wenjing/storage/psgn_encoder/model_best.pt')
+model_dict = torch.load('/home/wenjing/storage/conv2d/2code/model.pt')
 # print(model_dict)
 # list = []
-# for key in model_dict['model']:
+for key in model_dict['model']:
+    print(key)
 #     if 'init' in key:
 #         list.append(key)
 # new_model = {}
@@ -55,11 +56,12 @@ for item in filelist:
 # for key in model_dict['model']:
 # #     print(key, model_dict['model'][key].shape)
 # from torch.utils import model_zoo
-# # url = 'https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_img2mesh_3-f786b04a.pt'
-# url = 'https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_uncond_airplanes-26c9d089.pt'
+#
+# url = 'https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_img2mesh_3-f786b04a.pt'
+# # url = 'https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_uncond_airplanes-26c9d089.pt'
 # model2 = model_zoo.load_url(url, progress=True)
-# # for key in model2['model']:
-# #     print(key, model2['model'][key].shape)
+# for key in model2['model']:
+#     print(key, model2['model'][key].shape)
 # list = []
 # for key in model2['model']:
 #     if 'encoder' not in key:

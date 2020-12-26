@@ -96,7 +96,9 @@ class CResnetBlockConv1d(nn.Module):
         nn.init.zeros_(self.fc_1.weight)
 
     def forward(self, x, c):
+        # print('$$$$$$$$$$$$$$4', x.shape, c.shape)
         net = self.fc_0(self.actvn(self.bn_0(x, c)))
+        # print('@@@@@@@@@@', net.shape)
         dx = self.fc_1(self.actvn(self.bn_1(net, c)))
 
         if self.shortcut is not None:

@@ -48,20 +48,20 @@ def fix_K_camera(K, img_size=137):
     ], device=K.device, dtype=K.dtype)
     K_new = scale_mat.view(1, 3, 3) @ K
     return K_new
-
+data = np.load('/home/wenjing/Downloads/ShapeNet2/03001627/1a6f615e8b1b5ae4dbbc9440457e303e/img_choy2016/cameras.npz')
 # data = np.load('/media/wenjing/Data21/ShapeNet.build/03001627/4_points/fffda9f09223a21118ff2740a556cc3.npz')
-data = np.load('/home/wenjing/storage/raw/ShapeNet.build/03001627/4_points/fffda9f09223a21118ff2740a556cc3.npz')
+# data = np.load('/home/wenjing/storage/raw/ShapeNet.build/03001627/4_points/fffda9f09223a21118ff2740a556cc3.npz')
 lst = data.files
 for item in lst:
     print(item)
     print(data[item], data[item].shape)
 
-points = data['points_xy'].astype(np.float32)
+# points = data['points_xy'].astype(np.float32)
 # # print(points.shape)
 # occupancies = np.unpackbits(data['occupancies'])
 # # print(np.unique(occupancies), occupancies.shape)
-points = points.reshape(2500, 128, 3)
-print(points)
+# points = points.reshape(2500, 128, 3)
+# print(points)
 # occupancies = occupancies.reshape(2500, 128)
 #
 # n = 32

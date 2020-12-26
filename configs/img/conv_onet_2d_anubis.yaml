@@ -4,7 +4,7 @@ data:
 #  path: /home/wenjing/storage/data/ShapeNet
   img_folder: img_choy2016
   img_size: 224
-  points_subsample: 65
+  points_subsample: 32
   dim: 2
   padding: 0.1
 #  classes: ['03001627']

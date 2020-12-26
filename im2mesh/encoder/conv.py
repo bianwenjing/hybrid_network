@@ -67,7 +67,9 @@ class Resnet18(nn.Module):
         if self.normalize:
             x = normalize_imagenet(x)
         net = self.features(x)
+        # print('##########', net.shape)
         out = self.fc(net)
+        # print('$$$$$$$$$$', out.shape)
         return out
 
 
