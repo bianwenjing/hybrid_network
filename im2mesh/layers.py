@@ -226,6 +226,8 @@ class CBatchNorm1d(nn.Module):
         nn.init.zeros_(self.conv_beta.bias)
 
     def forward(self, x, c):
+        # print('@@@@@@@@@', x.shape) [64, 256, 1024]
+        # print('!!!!!!!!!!', c.shape) [64, 256]
         assert(x.size(0) == c.size(0))
         assert(c.size(1) == self.c_dim)
 
@@ -236,10 +238,13 @@ class CBatchNorm1d(nn.Module):
         # Affine mapping
         gamma = self.conv_gamma(c)
         beta = self.conv_beta(c)
+        # print('@@@@@@@@@', gamma.shape, beta.shape)
 
         # Batchnorm
         net = self.bn(x)
+        # print('############', net.shape, gamma.shape, beta.shape)
         out = gamma * net + beta
+        # print('$$$$$$$$$$$', out.shape)
 
         return out
 

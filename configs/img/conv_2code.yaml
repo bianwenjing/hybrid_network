@@ -15,6 +15,8 @@ model:
   encoder_local: unet
   c_dim_local: 32
   c_dim_global: 256
+#  c_dim_local: 128
+#  c_dim_global: 128
   z_dim: 0
   z_resolution: 64
 training:

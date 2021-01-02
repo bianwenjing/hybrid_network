@@ -1,7 +1,7 @@
 method: conv_2code
 data:
   path: /home/wenjing/storage/data/2d_ShapeNet
-#  path: /home/wenjing/Downloads/ShapeNet2
+#  path: /home/wenjing/storage/data/ShapeNet
   img_folder: img_choy2016
   img_size: 224
   points_subsample: 32
@@ -13,12 +13,14 @@ model:
   decoder: simple_local
   encoder_global: resnet18
   encoder_local: unet
-  c_dim_local: 32
-  c_dim_global: 256
+#  c_dim_local: 64
+  c_dim_global: 128
+  c_dim_local: 128
+#  c_dim_global: 128
   z_dim: 0
   z_resolution: 64
 training:
-  out_dir:  /home/wenjing/storage/conv_2d/2code
+  out_dir:  /home/wenjing/storage/conv_2d/test2
 #  out_dir:  out/img/onet_2d
   batch_size: 32
   model_selection_metric: iou
@@ -29,12 +31,12 @@ test:
   threshold: 0.2
   eval_mesh: true
   eval_pointcloud: false
-#  model_file: /home/wenjing/Desktop/onet_2d_64/model_best.pt
+#  model_file: /home/wenjing/storage/conv_2d/2code/model_best.pt
 generation:
   batch_size: 100000
   refine: false
   n_x: 128
   n_z: 1
-  resolution_0: 128
+  resolution_0: 64
   upsampling_steps: 0
   generation_dir: pretrained

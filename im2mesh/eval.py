@@ -96,16 +96,37 @@ class MeshEvaluator(object):
         )
         completeness2 = completeness**2
 
-        completeness = completeness.mean()
-        completeness2 = completeness2.mean()
-        completeness_normals = completeness_normals.mean()
-
         # Accuracy: how far are th points of the predicted pointcloud
         # from the target pointcloud
         accuracy, accuracy_normals = distance_p2p(
             pointcloud, normals, pointcloud_tgt, normals_tgt
         )
         accuracy2 = accuracy**2
+
+        # F-score
+        tau = 1e-4
+        eps = 1e-9
+
+        pred_to_gt = completeness
+        gt_to_pred = accuracy
+
+        prec_tau = (pred_to_gt <= tau).astype(np.float32).mean() * 100.
+        recall_tau = (gt_to_pred <= tau).astype(np.float32).mean() * 100.
+
+        fscore = (2 * prec_tau * recall_tau) / max(prec_tau + recall_tau, eps)
+
+        pred_to_gt = completeness2
+        gt_to_pred = accuracy2
+
+        prec_tau = (pred_to_gt <= tau).astype(np.float32).mean() * 100.
+        recall_tau = (gt_to_pred <= tau).astype(np.float32).mean() * 100.
+
+        fscore_2 = (2 * prec_tau * recall_tau) / max(prec_tau + recall_tau, eps)
+        #######################################################################3
+
+        completeness = completeness.mean()
+        completeness2 = completeness2.mean()
+        completeness_normals = completeness_normals.mean()
 
         accuracy = accuracy.mean()
         accuracy2 = accuracy2.mean()
@@ -114,7 +135,7 @@ class MeshEvaluator(object):
         # Chamfer distance
         chamferL2 = 0.5 * (completeness2 + accuracy2)
         normals_correctness = (
-            0.5 * completeness_normals + 0.5 * accuracy_normals
+                0.5 * completeness_normals + 0.5 * accuracy_normals
         )
         chamferL1 = 0.5 * (completeness + accuracy)
 
@@ -128,8 +149,9 @@ class MeshEvaluator(object):
             'accuracy2': accuracy2,
             'chamfer-L2': chamferL2,
             'chamfer-L1': chamferL1,
+            'F-score': fscore,
+            'F-score-2':fscore_2
         }
-
         return out_dict
 
 

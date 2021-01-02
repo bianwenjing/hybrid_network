@@ -117,6 +117,9 @@ class Generator3D(object):
             values = self.eval_points(pointsf, c, c_local, **kwargs).cpu().numpy()
             ###to do
             ##add the endpoint occupancy for z axis
+            end_pad = np.zeros((values.shape[0], 1)) - 1e6
+            values = np.concatenate((values, end_pad), axis=1)
+            nz = nz + 1
 
             value_grid = values.reshape(nx, nx, nz)
         else:

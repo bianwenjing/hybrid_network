@@ -54,7 +54,8 @@ class Resnet18(nn.Module):
         self.features = models.resnet18(pretrained=True)
         self.features.fc = nn.Sequential()
         if use_linear:
-            self.fc = nn.Linear(512, c_dim)
+            # self.fc = nn.Linear(512, c_dim)
+            self.fc = nn.Linear(512, 256)
         elif c_dim == 512:
             self.fc = nn.Sequential()
         else:
