@@ -2,6 +2,7 @@
 import torch
 from im2mesh.utils.libkdtree import KDTree
 import numpy as np
+import math
 
 def normalize_coordinate(p, padding=0.1):
     ''' Normalize coordinate to [0, 1] for unit cube experiments
@@ -241,6 +242,48 @@ def transform_points(points, transform):
         points_out = points @ K.transpose(1, 2)
 
     return points_out
+
+class map2local(object):
+    ''' Add new keys to the given input
+
+    Args:
+        s (float): the defined voxel size
+        pos_encoding (str): method for the positional encoding, linear|sin_cos
+    '''
+    def __init__(self, s, pos_encoding='linear'):
+        super().__init__()
+        self.s = s
+        self.pe = positional_encoding(basis_function=pos_encoding)
+
+    def __call__(self, p):
+        # p = torch.remainder(p, self.s) / self.s # always possitive
+        # p = torch.fmod(p, self.s) / self.s # same sign as input p!
+        p = self.pe(p)
+        return p
+
+class positional_encoding(object):
+    ''' Positional Encoding (presented in NeRF)
+
+    Args:
+        basis_function (str): basis function
+    '''
+    def __init__(self, basis_function='sin_cos'):
+        super().__init__()
+        self.func = basis_function
+
+        L = 10
+        freq_bands = 2.**(np.linspace(0, L-1, L))
+        self.freq_bands = freq_bands * math.pi
+
+    def __call__(self, p):
+        if self.func == 'sin_cos':
+            out = []
+            p = 2.0 * p - 1.0 # chagne to the range [-1, 1]
+            for freq in self.freq_bands:
+                out.append(torch.sin(freq * p))
+                out.append(torch.cos(freq * p))
+            p = torch.cat(out, dim=2)
+        return p
 
 
 def b_inv(b_mat):

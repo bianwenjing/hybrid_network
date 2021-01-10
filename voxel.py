@@ -12,9 +12,56 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from torchvision.utils import save_image
 import im2mesh.common as common
+def make_2d_grid(bb_min, bb_max, shape):
+    ''' Makes a 3D grid.
 
-# points_uniform = np.random.rand(5, 3)
-# print(points_uniform.shape, points_uniform)
+    Args:
+        bb_min (tuple): bounding box minimum
+        bb_max (tuple): bounding box maximum
+        shape (tuple): output shape
+    '''
+    size = shape[0] * shape[1]
+
+    pxs = torch.linspace(bb_min[0], bb_max[0], shape[0])
+    pys = torch.linspace(bb_min[1], bb_max[1], shape[1])
+
+
+    pxs = pxs.view(-1, 1).expand(*shape).contiguous().view(size)
+    pys = pys.view(1, -1).expand(*shape).contiguous().view(size)
+
+    p = torch.stack([pxs, pys], dim=1)
+
+    return p
+num_x = 8
+num_yz = 3
+points_yz = make_2d_grid(
+                (-0.5,)*2, (0.5,)*2, (num_yz,)*2
+            )
+
+points_x = np.random.rand(8, 1)
+points_x = np.repeat(points_x, num_yz**2)
+points_x = np.expand_dims(points_x, axis=1)
+points_yz = np.expand_dims(points_yz, axis=0)
+points_yz = np.repeat(points_yz, num_x, axis=0).reshape(num_x*num_yz**2, 2)
+
+
+points_uniform = np.concatenate([points_x, points_yz], axis=1)
+points_uniform = points_uniform.reshape(num_x, num_yz, num_yz,  3)
+print(points_uniform[1])
+
+# # data = np.load('/media/wenjing/Data21/ShapeNet.build/04090263/4_points/ffe20b3b5f34fbd0cbc6ff5546f4ec42.npz')
+# data = np.load('/media/wenjing/Data21/ShapeNet.build/02828884/4_points/46b3e857b7faab0117f92404d4be5d8.npz')
+# # data = np.load('/media/wenjing/Data21/ShapeNet.build/03001627/4_points/fffda9f09223a21118ff2740a556cc3.npz')
+# lst = data.files
+# # for item in lst:
+# #     print(item)
+# #     print(data[item], data[item].shape)
+# points_x = data['points_x']
+# len = points_x.shape[0]*65*65
+# occupancies = np.unpackbits(data['occupancies'])[:len]
+# occupancies = occupancies.reshape(100, 65, 65)
+# print(occupancies)
+
 
 # points_x = np.random.rand(4)
 # points_y = np.random.rand(4)
@@ -48,7 +95,7 @@ import im2mesh.common as common
 # y = np.linspace(-0.5, 0.5,num=voxels.shape[1])
 # points_xy = np.concatenate([x,y], axis=0)
 # print(points_xy.shape, points_xy)
-a = np.array([0,0,1])
+
 
 # points_xy = []
 # for i in np.linspace(-0.5, 0.5,num=voxels.shape[0]):
@@ -77,16 +124,16 @@ a = np.array([0,0,1])
 # print(x)
 
 
-# Create plot
-fig = plt.figure()
-ax = fig.gca(projection=Axes3D.name)
-voxels = voxels.transpose(2, 0, 1)
-voxels = voxels.transpose(1, 0, 2)
-# voxels_2 = voxels_2.transpose(2, 0, 1)
-ax.voxels(voxels, edgecolor='k')
-# ax.voxels(voxels_2, edgecolor='r')
-ax.set_xlabel('Z')
-ax.set_ylabel('X')
-ax.set_zlabel('Y')
-# ax.view_init(elev=30, azim=45)
-plt.show()
+# # Create plot
+# fig = plt.figure()
+# ax = fig.gca(projection=Axes3D.name)
+# voxels = voxels.transpose(2, 0, 1)
+# voxels = voxels.transpose(1, 0, 2)
+# # voxels_2 = voxels_2.transpose(2, 0, 1)
+# ax.voxels(voxels, edgecolor='k')
+# # ax.voxels(voxels_2, edgecolor='r')
+# ax.set_xlabel('Z')
+# ax.set_ylabel('X')
+# ax.set_zlabel('Y')
+# # ax.view_init(elev=30, azim=45)
+# plt.show()

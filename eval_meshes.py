@@ -124,6 +124,9 @@ for it, data in enumerate(tqdm(test_loader)):
                 mesh, pointcloud_tgt, normals_tgt, points_tgt, occ_tgt)
             for k, v in eval_dict_mesh.items():
                 eval_dict[k + ' (mesh)'] = v
+            if eval_dict['accuracy2 (mesh)']==3:
+                print('&&&&&&&&&&&&', mesh_file)
+
         else:
             print('Warning: mesh does not exist: %s' % mesh_file)
 

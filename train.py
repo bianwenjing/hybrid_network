@@ -80,7 +80,7 @@ trainer = config.get_trainer(model, optimizer, cfg, device=device)
 
 checkpoint_io = CheckpointIO(out_dir, model=model, optimizer=optimizer)
 try:
-    load_dict = checkpoint_io.load('/home/wenjing/oc_encoder.pt')
+    load_dict = checkpoint_io.load('/home/wenjing/storage/oc_encoder.pt')
     # load_dict = checkpoint_io.load('/home/wenjing/uncon_encoder.pt')
     # load_dict = checkpoint_io.load('model.pt')
     # load_dict = checkpoint_io.load('/home/wenjing/Desktop/onet_2d/model_best.pt')

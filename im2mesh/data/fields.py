@@ -231,6 +231,58 @@ class RayField2(Field):
 
         return data
 
+class RayField1(Field):
+    def __init__(self, file_name, transform=None, yz_resolution=32, with_transforms=False, unpackbits=False):
+        self.file_name = file_name
+        self.transform = transform
+        self.with_transforms = with_transforms
+        self.unpackbits = unpackbits
+        self.yz_resolution = yz_resolution
+
+    def load(self, model_path, idx, category):
+        ''' Loads the data point.
+
+        Args:
+            model_path (str): path to model
+            idx (int): ID of data point
+            category (int): index of category
+        '''
+        file_path = os.path.join(model_path, self.file_name)
+
+        points_dict = np.load(file_path)
+        points_x = points_dict['points_x']
+        # Break symmetry if given in float16:
+
+        if points_x.dtype == np.float16:
+            points_xy = points_x.astype(np.float32)
+            points_xy += 1e-4 * np.random.randn(*points_xy.shape)
+        else:
+            points_xy = points_x.astype(np.float32)
+
+        occupancies = points_dict['occupancies']
+
+        if self.unpackbits:
+            occupancies = np.unpackbits(occupancies)[:422500]
+
+        occupancies = occupancies.reshape(100, 65, 65)
+        interval = int(64/self.yz_resolution)
+        # index = [i*interval for i in range(self.yz_resolution)]
+        index = 64
+        occupancies_r = occupancies[:, :index, :index]
+        occupancies_r = occupancies_r.astype(np.float32)
+        data = {
+            None: points_xy,
+            'occ': occupancies_r,
+        }
+        if self.with_transforms:
+            data['loc'] = points_dict['loc'].astype(np.float32)
+            data['scale'] = points_dict['scale'].astype(np.float32)
+
+        if self.transform is not None:
+            data = self.transform(data)
+
+        return data
+
 class RayField(Field):
     ''' Voxel field class.
 

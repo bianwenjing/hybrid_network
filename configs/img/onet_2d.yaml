@@ -4,7 +4,7 @@ data:
   path: /home/wenjing/Downloads/ShapeNet2
   img_folder: img_choy2016
   img_size: 224
-  points_subsample: 1024
+  points_subsample: 128
   dim: 2
 #  classes: ['03001627']
   img_with_camera: false
@@ -16,6 +16,8 @@ model:
   c_dim: 256
   z_dim: 0
   z_resolution: 64
+  attention: false
+  positional_encoding: true
 training:
 #  out_dir:  /home/wenjing/storage/out/onet
   out_dir:  out/img/onet_2d

@@ -1,7 +1,7 @@
 method: conv_onet_2d
 data:
-  path: /home/wenjing/storage/data/2d_ShapeNet
-#  path: /home/wenjing/storage/data/ShapeNet
+#  path: /home/wenjing/storage/data/2d_ShapeNet
+  path: /home/wenjing/storage/data/ShapeNet
   img_folder: img_choy2016
   img_size: 224
   points_subsample: 32
@@ -33,6 +33,6 @@ generation:
   refine: false
   n_x: 128
   n_z: 1
-  resolution_0: 128
+  resolution_0: 64
   upsampling_steps: 0
   generation_dir: pretrained

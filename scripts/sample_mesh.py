@@ -10,7 +10,7 @@ from functools import partial
 sys.path.append('..')
 from im2mesh.utils import binvox_rw, voxels
 from im2mesh.utils.libmesh import check_mesh_contains
-
+import torch
 
 parser = argparse.ArgumentParser('Sample a watertight mesh.')
 parser.add_argument('in_folder', type=str,
@@ -165,6 +165,25 @@ def export_voxels(mesh, modelname, loc, scale, args):
     with open(filename, 'bw') as f:
         voxels_out.write(f)
 
+def make_2d_grid(bb_min, bb_max, shape):
+    ''' Makes a 3D grid.
+
+    Args:
+        bb_min (tuple): bounding box minimum
+        bb_max (tuple): bounding box maximum
+        shape (tuple): output shape
+    '''
+    size = shape[0] * shape[1]
+
+    pxs = torch.linspace(bb_min[0], bb_max[0], shape[0])
+    pys = torch.linspace(bb_min[1], bb_max[1], shape[1])
+
+    pxs = pxs.view(-1, 1).expand(*shape).contiguous().view(size)
+    pys = pys.view(1, -1).expand(*shape).contiguous().view(size)
+
+    p = torch.stack([pxs, pys], dim=1)
+
+    return p
 
 def export_points(mesh, modelname, loc, scale, args):
     if not mesh.is_watertight:
@@ -184,21 +203,31 @@ def export_points(mesh, modelname, loc, scale, args):
     boxsize = 1 + args.points_padding
     ##################################################################
     # points_uniform = np.random.rand(n_points_uniform, 3)
-    num_xy = 2500
-    num_z = 128
-    points_xy = np.random.rand(num_xy, 2)
-    points_uniform_xy = np.repeat(points_xy, num_z, axis=0)
-    points_uniform_z = np.linspace(0, 1, num=num_z, endpoint=False)
-    points_uniform_z = np.expand_dims(points_uniform_z, axis=1)
-    points_uniform_z = np.repeat(points_uniform_z, num_xy, axis=1).transpose(1,0)
-    points_uniform_z = np.reshape(points_uniform_z, (-1,1))
-    points_uniform = np.concatenate([points_uniform_xy, points_uniform_z], axis=1)
+    # 2d onet
+    # num_xy = 2500
+    # num_z = 128
+    # points_xy = np.random.rand(num_xy, 2)
+    # points_uniform_xy = np.repeat(points_xy, num_z, axis=0)
+    # points_uniform_z = np.linspace(0, 1, num=num_z, endpoint=False)
+    # points_uniform_z = np.expand_dims(points_uniform_z, axis=1)
+    # points_uniform_z = np.repeat(points_uniform_z, num_xy, axis=1).transpose(1,0)
+    # points_uniform_z = np.reshape(points_uniform_z, (-1,1))
+    # points_uniform = np.concatenate([points_uniform_xy, points_uniform_z], axis=1)
+    #1d onet
+    num_x = 100
+    num_yz = 65
+    points_x_o = np.random.rand(num_x, 1)
+    points_x = np.repeat(points_x_o, num_yz ** 2)
+    points_x = np.expand_dims(points_x, axis=1)
+    points_yz = make_2d_grid((0,)*2, (1,)*2, (num_yz,)*2).numpy()
+    points_yz = np.repeat(points_yz, num_x, axis=0).reshape(num_x * num_yz ** 2, 2)
+    points_uniform = np.concatenate([points_x, points_yz], axis=1)
     #################################################################
     points_uniform = boxsize * (points_uniform - 0.5)
     points_surface = mesh.sample(n_points_surface)
     points_surface += args.points_sigma * np.random.randn(n_points_surface, 3)
     points = np.concatenate([points_uniform, points_surface], axis=0)
-
+    # print('$$$$$$$$', points.shape)
     occupancies = check_mesh_contains(mesh, points)
 
     # Compress
@@ -208,14 +237,19 @@ def export_points(mesh, modelname, loc, scale, args):
         dtype = np.float32
 
     # points = points.astype(dtype)
-    points_xy = boxsize * (points_xy - 0.5)
-    points_xy = points_xy.astype(dtype)
-
+    #2d onet
+    # points_xy = boxsize * (points_xy - 0.5)
+    # points_xy = points_xy.astype(dtype)
+    #1d onet
+    points_x_o = boxsize * (points_x_o - 0.5)
+    points_x_o = points_x_o.astype(dtype)
     if args.packbits:
         occupancies = np.packbits(occupancies)
 
     print('Writing points: %s' % filename)
-    np.savez(filename, points_xy=points_xy, occupancies=occupancies,
+    # np.savez(filename, points_xy=points_xy, occupancies=occupancies,
+    #          loc=loc, scale=scale)
+    np.savez(filename, points_x=points_x_o, occupancies=occupancies,
              loc=loc, scale=scale)
 
 

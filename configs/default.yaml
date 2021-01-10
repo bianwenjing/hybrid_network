@@ -39,6 +39,8 @@ model:
   z_dim: 64
   use_camera: false
   dmc_weight_prior: 10.
+  attention: false
+  positional_encoding: false
 training:
   out_dir:  out/default
   batch_size: 64

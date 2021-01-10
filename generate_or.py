@@ -28,6 +28,7 @@ out_dir = cfg['training']['out_dir']
 generation_dir = os.path.join(out_dir, cfg['generation']['generation_dir'])
 out_time_file = os.path.join(generation_dir, 'time_generation_full.pkl')
 out_time_file_class = os.path.join(generation_dir, 'time_generation.pkl')
+out_time_csv = os.path.join(generation_dir, 'time_generation.csv')
 
 batch_size = cfg['generation']['batch_size']
 input_type = cfg['data']['input_type']
@@ -204,6 +205,7 @@ time_df.to_pickle(out_time_file)
 # Create pickle files  with main statistics
 time_df_class = time_df.groupby(by=['class name']).mean()
 time_df_class.to_pickle(out_time_file_class)
+time_df_class.to_csv(out_time_csv)
 
 # Print results
 time_df_class.loc['mean'] = time_df_class.mean()

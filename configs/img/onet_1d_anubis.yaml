@@ -1,23 +1,23 @@
-method: onet_2d
+method: onet_1d
 data:
-#  path: /home/wenjing/storage/data/2d_ShapeNet
-  path: /home/wenjing/storage/data/ShapeNet
+  path: /home/wenjing/storage/data/1d_ShapeNet/2d_ShapeNet
+#  path: /home/wenjing/storage/data/ShapeNet
   img_folder: img_choy2016
   img_size: 224
   points_subsample: 128
-  dim: 2
-#  classes: ['03001627']
+  dim: 1
+#  classes: ['03636649']
 model:
   encoder_latent: null
   decoder: cbatchnorm_or
   encoder: resnet18
   c_dim: 256
   z_dim: 0
-  z_resolution: 32
+  yz_resolution: 64
   attention: false
   positional_encoding: false
 training:
-  out_dir:  /home/wenjing/storage/data2/onet_2d_32
+  out_dir:  /home/wenjing/storage/data2/onet_1d_32
 #  out_dir:  out/img/onet_2d
   batch_size: 64
   model_selection_metric: iou
@@ -28,7 +28,7 @@ test:
   threshold: 0.2
   eval_mesh: true
   eval_pointcloud: false
-  model_file: /home/wenjing/storage/data2/onet_2d_32/model_best.pt
+#  model_file: /home/wenjing/storage/data2/onet_2d_32/model_best.pt
 generation:
   batch_size: 100000
   refine: false

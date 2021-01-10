@@ -1,7 +1,7 @@
 import yaml
 from torchvision import transforms
 from im2mesh import data
-from im2mesh import onet, r2n2, psgn, pix2mesh, dmc, combined, combined2, onet_2d, onet_2d_conv, onet_2d_2code
+from im2mesh import onet, r2n2, psgn, pix2mesh, dmc, combined, combined2, onet_2d, onet_2d_conv, onet_2d_2code, onet_1d
 from im2mesh import preprocess
 
 
@@ -16,6 +16,7 @@ method_dict = {
     'onet_2d': onet_2d,
     'conv_onet_2d': onet_2d_conv,
     'conv_2code': onet_2d_2code,
+    'onet_1d': onet_1d,
 }
 
 
