@@ -1,11 +1,12 @@
 method: onet
 data:
-  path: /home/wenjing/storage/data/ShapeNet
-#  path: /home/wenjing/Downloads/ShapeNet
+#  path: /home/wenjing/storage/data/ShapeNet
+  path: /home/wenjing/Downloads/ShapeNet
   img_folder: img_choy2016
   img_size: 224 
   points_subsample: 2048
 #  classes: ['03001627']
+  img_with_camera: true
 model:
   encoder_latent: null
   decoder: cbatchnorm

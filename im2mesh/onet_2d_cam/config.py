@@ -142,7 +142,7 @@ def get_data_fields(mode, cfg):
     with_transforms = cfg['data']['with_transforms']
     z_resolution = cfg['model']['z_resolution']
     fields = {}
-    fields['points'] = data.RayField2(
+    fields['points'] = data.RayField_cam(
         cfg['data']['points_file'], points_transform,
         z_resolution=z_resolution,
         with_transforms=with_transforms,

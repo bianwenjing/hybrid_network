@@ -107,17 +107,17 @@ def process_path(in_path, args):
             mesh.apply_transform(R)
 
     # Expert various modalities
-    if args.pointcloud_folder is not None:
-        export_pointcloud(mesh, modelname, loc, scale, args)
-
-    if args.voxels_folder is not None:
-        export_voxels(mesh, modelname, loc, scale, args)
+    # if args.pointcloud_folder is not None:
+    #     export_pointcloud(mesh, modelname, loc, scale, args)
+    #
+    # if args.voxels_folder is not None:
+    #     export_voxels(mesh, modelname, loc, scale, args)
 
     if args.points_folder is not None:
         export_points(mesh, modelname, loc, scale, args)
 
-    if args.mesh_folder is not None:
-        export_mesh(mesh, modelname, loc, scale, args)
+    # if args.mesh_folder is not None:
+    #     export_mesh(mesh, modelname, loc, scale, args)
 
 
 def export_pointcloud(mesh, modelname, loc, scale, args):
@@ -220,6 +220,7 @@ def export_points(mesh, modelname, loc, scale, args):
     points_x = np.repeat(points_x_o, num_yz ** 2)
     points_x = np.expand_dims(points_x, axis=1)
     points_yz = make_2d_grid((0,)*2, (1,)*2, (num_yz,)*2).numpy()
+    points_yz = np.expand_dims(points_yz, axis=0)
     points_yz = np.repeat(points_yz, num_x, axis=0).reshape(num_x * num_yz ** 2, 2)
     points_uniform = np.concatenate([points_x, points_yz], axis=1)
     #################################################################

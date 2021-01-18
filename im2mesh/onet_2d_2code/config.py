@@ -85,13 +85,15 @@ def get_trainer(model, optimizer, cfg, device, **kwargs):
     vis_dir = os.path.join(out_dir, 'vis')
     input_type = cfg['data']['input_type']
     z_resolution = cfg['model']['z_resolution']
+    camera = cfg['data']['img_with_camera']
 
     trainer = training.Trainer(
         model, optimizer,
         device=device, input_type=input_type,
         vis_dir=vis_dir, threshold=threshold,
         eval_sample=cfg['training']['eval_sample'],
-        z_resolution=z_resolution
+        z_resolution=z_resolution,
+        camera=camera
     )
 
     return trainer
@@ -146,7 +148,8 @@ def get_data_fields(mode, cfg):
         cfg (dict): imported yaml config
     '''
     points_transform = data.SubsamplePoints(cfg['data']['points_subsample'])
-    with_transforms = cfg['model']['use_camera']
+    # with_transforms = cfg['model']['use_camera']
+    with_transforms = cfg['data']['with_transforms']
     z_resolution = cfg['model']['z_resolution']
     fields = {}
     fields['points'] = data.RayField2(

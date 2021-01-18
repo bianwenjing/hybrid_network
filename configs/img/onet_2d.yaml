@@ -7,8 +7,8 @@ data:
   points_subsample: 128
   dim: 2
 #  classes: ['03001627']
-  img_with_camera: false
-  with_transforms: false
+  img_with_camera: true
+  with_transforms: true
 model:
   encoder_latent: null
   decoder: cbatchnorm

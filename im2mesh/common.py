@@ -19,6 +19,7 @@ def normalize_coordinate(p, padding=0.1):
     # else:
     #     xy = p[:, :, [1, 2]]
 
+    padding = 0
     xy_new = p / (1 + padding + 10e-6) # (-0.5, 0.5)
     xy_new = xy_new + 0.5 # range (0, 1)
 
@@ -236,6 +237,7 @@ def transform_points(points, transform):
     if transform.size(2) == 4:
         R = transform[:, :, :3]
         t = transform[:, :, 3:]
+        # print('$$$$$$$$$$$$',t)
         points_out = points @ R.transpose(1, 2) + t.transpose(1, 2)
     elif transform.size(2) == 3:
         K = transform
@@ -331,6 +333,7 @@ def project_to_camera(points, transform):
     '''
     p_camera = transform_points(points, transform)
     p_camera = p_camera[..., :2] / p_camera[..., 2:]
+    # p_camera = p_camera[..., :] / p_camera[..., 2:]
     return p_camera
 
 
@@ -355,12 +358,11 @@ def get_camera_args(data, loc_field=None, scale_field=None, device=None):
         scale = data[scale_field].to(device)
     else:
         scale = torch.zeros(K.size(0), device=K.device, dtype=K.dtype)
-
     Rt = fix_Rt_camera(Rt, loc, scale)
     K = fix_K_camera(K, img_size=137.)
+    # K = fix_K_camera(K, img_size=224.)
     kwargs = {'Rt': Rt, 'K': K}
     return kwargs
-
 
 def fix_Rt_camera(Rt, loc, scale):
     ''' Fixes Rt camera matrix.

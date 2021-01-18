@@ -177,6 +177,59 @@ class PointsField(Field):
             data = self.transform(data)
 
         return data
+class RayField2_cam(Field):
+    def __init__(self, file_name, transform=None, z_resolution=32, with_transforms=False, unpackbits=False):
+        self.file_name = file_name
+        self.transform = transform
+        self.with_transforms = with_transforms
+        self.unpackbits = unpackbits
+        self.z_resolution = z_resolution
+
+    def load(self, model_path, idx, category):
+        ''' Loads the data point.
+
+        Args:
+            model_path (str): path to model
+            idx (int): ID of data point
+            category (int): index of category
+        '''
+        file_path = os.path.join(model_path, self.file_name)  #load mesh
+        mesh = trimesh.load(in_path, process=False)
+
+        points_dict = np.load(file_path)
+        points_xy = points_dict['points_xy']
+        # Break symmetry if given in float16:
+
+        # points_xy = (points_xy - 0.5) * 1.1
+
+        if points_xy.dtype == np.float16:
+            points_xy = points_xy.astype(np.float32)
+            points_xy += 1e-4 * np.random.randn(*points_xy.shape)
+        else:
+            points_xy = points_xy.astype(np.float32)
+
+        occupancies = points_dict['occupancies']
+
+        if self.unpackbits:
+            occupancies = np.unpackbits(occupancies)
+
+        occupancies = occupancies.reshape(2500, 128)
+        interval = int(128/self.z_resolution)
+        index = [i*interval for i in range(self.z_resolution)]
+        occupancies_r = occupancies[:, index]
+        occupancies_r = occupancies_r.astype(np.float32)
+        data = {
+            None: points_xy,
+            'occ': occupancies_r,
+        }
+        if self.with_transforms:
+            data['loc'] = points_dict['loc'].astype(np.float32)
+            data['scale'] = points_dict['scale'].astype(np.float32)
+
+        if self.transform is not None:
+            data = self.transform(data)
+
+        return data
 
 class RayField2(Field):
     def __init__(self, file_name, transform=None, z_resolution=32, with_transforms=False, unpackbits=False):
@@ -266,9 +319,9 @@ class RayField1(Field):
 
         occupancies = occupancies.reshape(100, 65, 65)
         interval = int(64/self.yz_resolution)
-        # index = [i*interval for i in range(self.yz_resolution)]
-        index = 64
-        occupancies_r = occupancies[:, :index, :index]
+        index = [i*interval for i in range(self.yz_resolution)]
+        # index = 64
+        occupancies_r = occupancies[:, :, index][:, index, :]
         occupancies_r = occupancies_r.astype(np.float32)
         data = {
             None: points_xy,

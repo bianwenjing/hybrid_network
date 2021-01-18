@@ -12,42 +12,49 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from torchvision.utils import save_image
 import im2mesh.common as common
-def make_2d_grid(bb_min, bb_max, shape):
-    ''' Makes a 3D grid.
+# def make_2d_grid(bb_min, bb_max, shape):
+#     ''' Makes a 3D grid.
+#
+#     Args:
+#         bb_min (tuple): bounding box minimum
+#         bb_max (tuple): bounding box maximum
+#         shape (tuple): output shape
+#     '''
+#     size = shape[0] * shape[1]
+#
+#     pxs = torch.linspace(bb_min[0], bb_max[0], shape[0])
+#     pys = torch.linspace(bb_min[1], bb_max[1], shape[1])
+#
+#
+#     pxs = pxs.view(-1, 1).expand(*shape).contiguous().view(size)
+#     pys = pys.view(1, -1).expand(*shape).contiguous().view(size)
+#
+#     p = torch.stack([pxs, pys], dim=1)
+#
+#     return p
+# num_x = 8
+# num_yz = 3
+# points_yz = make_2d_grid(
+#                 (-0.5,)*2, (0.5,)*2, (num_yz,)*2
+#             )
+#
+# points_x = np.random.rand(8, 1)
+# points_x = np.repeat(points_x, num_yz**2)
+# points_x = np.expand_dims(points_x, axis=1)
+# points_yz = np.expand_dims(points_yz, axis=0)
+# points_yz = np.repeat(points_yz, num_x, axis=0).reshape(num_x*num_yz**2, 2)
+#
+#
+# points_uniform = np.concatenate([points_x, points_yz], axis=1)
+# # points_uniform = points_uniform.reshape(num_x, num_yz, num_yz,  3)
+# print(points_uniform)
 
-    Args:
-        bb_min (tuple): bounding box minimum
-        bb_max (tuple): bounding box maximum
-        shape (tuple): output shape
-    '''
-    size = shape[0] * shape[1]
-
-    pxs = torch.linspace(bb_min[0], bb_max[0], shape[0])
-    pys = torch.linspace(bb_min[1], bb_max[1], shape[1])
-
-
-    pxs = pxs.view(-1, 1).expand(*shape).contiguous().view(size)
-    pys = pys.view(1, -1).expand(*shape).contiguous().view(size)
-
-    p = torch.stack([pxs, pys], dim=1)
-
-    return p
-num_x = 8
-num_yz = 3
-points_yz = make_2d_grid(
-                (-0.5,)*2, (0.5,)*2, (num_yz,)*2
-            )
-
-points_x = np.random.rand(8, 1)
-points_x = np.repeat(points_x, num_yz**2)
-points_x = np.expand_dims(points_x, axis=1)
-points_yz = np.expand_dims(points_yz, axis=0)
-points_yz = np.repeat(points_yz, num_x, axis=0).reshape(num_x*num_yz**2, 2)
-
-
-points_uniform = np.concatenate([points_x, points_yz], axis=1)
-points_uniform = points_uniform.reshape(num_x, num_yz, num_yz,  3)
-print(points_uniform[1])
+values = np.random.rand(4, 4, 4)
+end_pad1 =  np.zeros((values.shape[0], 1, values.shape[2]))
+end_pad2 =  np.zeros((values.shape[0], values.shape[1]+1, 1))
+values = np.concatenate((values, end_pad1), axis=1)
+values = np.concatenate((values, end_pad2), axis=2)
+print(values)
 
 # # data = np.load('/media/wenjing/Data21/ShapeNet.build/04090263/4_points/ffe20b3b5f34fbd0cbc6ff5546f4ec42.npz')
 # data = np.load('/media/wenjing/Data21/ShapeNet.build/02828884/4_points/46b3e857b7faab0117f92404d4be5d8.npz')

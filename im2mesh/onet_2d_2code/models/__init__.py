@@ -56,7 +56,7 @@ class OccupancyNetwork(nn.Module):
 
         self._device = device
 
-    def forward(self, p, inputs, sample=True, **kwargs):
+    def forward(self, p, p_projection, inputs, sample=True, **kwargs):
         ''' Performs a forward pass through the network.
 
         Args:
@@ -66,7 +66,7 @@ class OccupancyNetwork(nn.Module):
         '''
         batch_size = p.size(0)
         c, c_local = self.encode_inputs(inputs)
-        p_r = self.decode(p, c, c_local, **kwargs)
+        p_r = self.decode(p, p_projection, c, c_local, **kwargs)
         return p_r
 
 
@@ -81,7 +81,7 @@ class OccupancyNetwork(nn.Module):
             c = self.encoder(inputs)
         else:
             # Return inputs?
-            c = torch.empty(inputs.size(0), 0)
+            c = torch.empty(inputs.size(0), 0).to(torch.device('cuda:0'))
         if self.encoder_local is not None:
             c_local = self.encoder_local(inputs)
         else:
@@ -92,7 +92,7 @@ class OccupancyNetwork(nn.Module):
 
         return c, c_local
 
-    def decode(self, p, c, c_local, **kwargs):
+    def decode(self, p, p_project, c, c_local, **kwargs):
         ''' Returns occupancy probabilities for the sampled points.
 
         Args:
@@ -101,7 +101,7 @@ class OccupancyNetwork(nn.Module):
             c (tensor): latent conditioned code c
         '''
 
-        logits = self.decoder(p, c, c_local, **kwargs)
+        logits = self.decoder(p, p_project, c, c_local, **kwargs)
         # print('#########',logits.shape)
         p_r = dist.Bernoulli(logits=logits)
         # print('!!!!!!!!!!!1', type(p_r), p_r)

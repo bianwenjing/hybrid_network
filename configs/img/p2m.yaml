@@ -12,7 +12,7 @@ data:
   classes: ['03001627']
 model:
   encoder_latent2: simple
-  decoder2: another
+  decoder2: simple
   encoder2: tensorflow
   encoder_kwargs2: {}
   decoder_kwargs2:

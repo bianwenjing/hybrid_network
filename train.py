@@ -8,7 +8,7 @@ import time
 import matplotlib; matplotlib.use('Agg')
 from im2mesh import config, data
 from im2mesh.checkpoints import CheckpointIO
-
+import shutil
 
 # Arguments
 parser = argparse.ArgumentParser(
@@ -47,6 +47,9 @@ else:
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
+
+shutil.copyfile(args.config, os.path.join(out_dir, 'config.yaml'))
+
 # Dataset
 train_dataset = config.get_dataset('train', cfg)
 val_dataset = config.get_dataset('val', cfg)
@@ -80,9 +83,9 @@ trainer = config.get_trainer(model, optimizer, cfg, device=device)
 
 checkpoint_io = CheckpointIO(out_dir, model=model, optimizer=optimizer)
 try:
-    load_dict = checkpoint_io.load('/home/wenjing/storage/oc_encoder.pt')
+    # load_dict = checkpoint_io.load('/home/wenjing/storage/oc_encoder.pt')
     # load_dict = checkpoint_io.load('/home/wenjing/uncon_encoder.pt')
-    # load_dict = checkpoint_io.load('model.pt')
+    load_dict = checkpoint_io.load('model.pt')
     # load_dict = checkpoint_io.load('/home/wenjing/Desktop/onet_2d/model_best.pt')
 except FileExistsError:
     load_dict = dict()

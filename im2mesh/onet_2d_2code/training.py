@@ -8,7 +8,7 @@ from im2mesh.common import (
 )
 from im2mesh.utils import visualize as vis
 from im2mesh.training import BaseTrainer
-
+import im2mesh.common as common
 
 class Trainer(BaseTrainer):
     ''' Trainer object for the Occupancy Network.
@@ -25,7 +25,7 @@ class Trainer(BaseTrainer):
     '''
 
     def __init__(self, model, optimizer, device=None, input_type='img',
-                 vis_dir=None, threshold=0.5, eval_sample=False, z_resolution=32):
+                 vis_dir=None, threshold=0.5, eval_sample=False, z_resolution=32, camera=False):
         self.model = model
         self.optimizer = optimizer
         self.device = device
@@ -34,6 +34,7 @@ class Trainer(BaseTrainer):
         self.threshold = threshold
         self.eval_sample = eval_sample
         self.z_resolution = z_resolution
+        self.camera = camera
 
         if vis_dir is not None and not os.path.exists(vis_dir):
             os.makedirs(vis_dir)
@@ -80,9 +81,24 @@ class Trainer(BaseTrainer):
         batch_size = points_xy.size(0)
 
         # print('@@@@@@@@@@', points_iou.shape) #(10, 100000, 3)
+        if self.camera:
+            camera_args = common.get_camera_args(
+                data, 'points.loc', 'points.scale', device=self.device)
+            # # Transform GT data into camera coordinate system
+            world_mat, camera_mat = camera_args['Rt'], camera_args['K']
+            batch_size, D, T = points_iou.size()
+            z_coor = torch.linspace(0, 1, self.z_resolution + 1)[:-1].unsqueeze(1).to(device)
+            z_coor = 1.1 * (z_coor - 0.5)
+            z_coor = z_coor.expand(batch_size, D, *z_coor.size())
+            xy_coor = points_iou.unsqueeze(2)
+            xy_coor = xy_coor.expand(-1, -1, 64, -1)
+            points = torch.cat([xy_coor, z_coor], dim=3)
+            points = points.view(batch_size, -1, 3)
+            points_transformed = common.transform_points(points, world_mat)
+            points_projection = common.project_to_camera(points_transformed, camera_mat)
 
         with torch.no_grad():
-            p_out = self.model(points_iou, inputs,
+            p_out = self.model(points_iou, points_projection, inputs,
                                sample=self.eval_sample, **kwargs)
 
 
@@ -140,8 +156,25 @@ class Trainer(BaseTrainer):
         kwargs = {}
 
         # print('#########3', p.shape)  #(12, 32^2, 2)
+
+        if self.camera:
+            camera_args = common.get_camera_args(
+                data, 'points.loc', 'points.scale', device=self.device)
+            # # Transform GT data into camera coordinate system
+            world_mat, camera_mat = camera_args['Rt'], camera_args['K']
+            batch_size, D, T = p.size()
+            z_coor = torch.linspace(0, 1, self.z_resolution + 1)[:-1].unsqueeze(1).to(device)
+            z_coor = 1.1 * (z_coor-0.5)
+            z_coor = z_coor.expand(batch_size, D, *z_coor.size())
+            xy_coor = p.unsqueeze(2)
+            xy_coor = xy_coor.expand(-1, -1, 64, -1)
+            points = torch.cat([xy_coor, z_coor], dim=3)
+            points = points.view(batch_size, -1, 3)
+            points_transformed = common.transform_points(points, world_mat)
+            points_projection = common.project_to_camera(points_transformed, camera_mat)
+
         with torch.no_grad():
-            p_r = self.model(p, inputs, sample=self.eval_sample, **kwargs)
+            p_r = self.model(p, points_projection, inputs, sample=self.eval_sample, **kwargs)
 
         # print('$$$$$$$$$$$$$$', p_r.probs.shape) [12, 32, 1024]
         occ_hat = p_r.probs.view(batch_size, *shape, z_resolution)
@@ -166,12 +199,30 @@ class Trainer(BaseTrainer):
         inputs = data.get('inputs', torch.empty(p_xy.size(0), 0)).to(device)
 
         kwargs = {}
+        if self.camera:
+            camera_args = common.get_camera_args(
+                data, 'points.loc', 'points.scale', device=self.device)
+            # # Transform GT data into camera coordinate system
+            world_mat, camera_mat = camera_args['Rt'], camera_args['K']
+            batch_size, D, T = p_xy.size()
+            z_coor = torch.linspace(0, 1, self.z_resolution + 1)[:-1].unsqueeze(1).to(device)
+            z_coor = 1.1 * (z_coor-0.5)
+            z_coor = z_coor.expand(batch_size, D, *z_coor.size())
+            xy_coor = p_xy.unsqueeze(2)
+            xy_coor = xy_coor.expand(-1, -1, 64, -1)
+            points = torch.cat([xy_coor, z_coor], dim=3)
+            points = points.view(batch_size, -1, 3)
+            points_transformed = common.transform_points(points, world_mat)
+            points_projection = common.project_to_camera(points_transformed, camera_mat)
+            # print('###########', points_projection.shape, torch.max(points_projection), torch.min(points_projection))
 
         c, c_local = self.model.encode_inputs(inputs)
         # print('###########', c.shape) # [32, 32, 224, 224]
 
-        # General points
-        logits = self.model.decode(p_xy, c, c_local, **kwargs).logits
+        if self.camera:
+            logits = self.model.decode(p_xy, points_projection, c, c_local, **kwargs).logits
+        else:
+            logits = self.model.decode(p_xy, c, c_local, **kwargs).logits
         # print('$$$$$$$$$$$$', logits.shape) #[64, 1024, 32]
         # print('###########', occ_z.shape)
 
