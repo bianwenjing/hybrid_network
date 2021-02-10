@@ -50,22 +50,22 @@ def fix_Rt_camera(Rt, loc, scale):
 #     K_new = scale_mat.view(1, 3, 3) @ K
 #     return K_new
 # data = np.load('/home/wenjing/Downloads/ShapeNet2/03001627/1a6f615e8b1b5ae4dbbc9440457e303e/img_choy2016/cameras.npz')
-mesh_file = '/home/wenjing/Desktop/1a04e3eab45ca15dd86060f189eb133_4water.off'
-mesh = trimesh.load(mesh_file, process=False)
+# mesh_file = '/home/wenjing/Desktop/1a04e3eab45ca15dd86060f189eb133_4water.off'
+# mesh = trimesh.load(mesh_file, process=False)
 
 # data = np.load('/home/wenjing/storage/raw/ShapeNet.build/03001627/4_points/fffda9f09223a21118ff2740a556cc3.npz')
-# data = np.load('/home/wenjing/Downloads/ShapeNet/02691156/1a04e3eab45ca15dd86060f189eb133/points.npz')
-# data = np.load('/home/wenjing/Downloads/ShapeNet2/03001627/97df0e7773e51feb331fc18393f04d2a/points.npz')
-# lst = data.files
-# for item in lst:
-#     print(item)
-#     print(data[item], data[item].shape)
+# data = np.load('/home/wenjing/Downloads/ShapeNet/02828884/78585e161ee3e39acb2a965e75be701c/points.npz')
+data = np.load('/home/wenjing/Downloads/ShapeNet/03001627/97df0e7773e51feb331fc18393f04d2a/pointcloud.npz')
+lst = data.files
+for item in lst:
+    print(item)
+    print(data[item], data[item].shape)
 # scale = data['scale']
 # vertices = mesh.vertices * scale
 # mesh_scaled = trimesh.Trimesh(vertices, mesh.faces,
 #                                process=False)
 # mesh_scaled.export('/home/wenjing/Desktop/scaled.off')
-# points = torch.tensor(data['points_xy'].astype(np.float32)).unsqueeze(0)
+points = torch.tensor(data['points'].astype(np.float32)).unsqueeze(0)
 # batch_size, D, T = points.size()
 # z_coor = torch.linspace(0, 1, 65)[:-1].unsqueeze(1)
 # z_coor = 1.1 * (z_coor - 0.5)
@@ -96,15 +96,16 @@ mesh = trimesh.load(mesh_file, process=False)
 #     x.append(points[i][1])
 # x=np.array(x)
 # print(x.shape, np.amax(x))
-# loc = torch.tensor(data['loc'].astype(np.float32)).unsqueeze(0)
-# scale = torch.tensor(data['scale'].astype(np.float32))
+loc = torch.tensor(data['loc'].astype(np.float32)).unsqueeze(0)
+scale = torch.tensor(data['scale'].astype(np.float32))
 # # mat = np.load('/home/wenjing/Downloads/ShapeNet/02691156/1a04e3eab45ca15dd86060f189eb133/img_choy2016/cameras.npz')
-# mat = np.load('/home/wenjing/Downloads/ShapeNet/03001627/97df0e7773e51feb331fc18393f04d2a/img_choy2016/cameras.npz')
-# world_mat = torch.tensor(mat['world_mat_2'].astype(np.float32)).unsqueeze(0)
-# camera_mat = torch.tensor(mat['camera_mat_2'].astype(np.float32)).unsqueeze(0)
-# # print(camera_mat)
+mat = np.load('/home/wenjing/Downloads/ShapeNet/03001627/97df0e7773e51feb331fc18393f04d2a/img_choy2016/cameras.npz')
+world_mat = torch.tensor(mat['world_mat_2'].astype(np.float32)).unsqueeze(0)
+camera_mat = torch.tensor(mat['camera_mat_2'].astype(np.float32)).unsqueeze(0)
+print(camera_mat)
+print(world_mat)
 # world_mat = fix_Rt_camera(world_mat, loc, scale)
-# points_transformed = common.transform_points(points, world_mat)
+points_transformed = common.transform_points(points, world_mat)
 # points_projection = common.project_to_camera(points_transformed, camera_mat)
 # dir = '/home/wenjing/Desktop/points.ply'
 # print(points.shape)

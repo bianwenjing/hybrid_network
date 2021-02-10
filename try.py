@@ -31,20 +31,20 @@ import torch
 # # p_r = dist.Bernoulli(logits=a)
 # # print(p_r.probs)
 #
-# def removekey(d, listofkeys):
-#     r = dict(d)
-#     for key in listofkeys:
-#         print('key: {} is removed'.format(key))
-#         r.pop(key)
-#     return r
+def removekey(d, listofkeys):
+    r = dict(d)
+    for key in listofkeys:
+        print('key: {} is removed'.format(key))
+        r.pop(key)
+    return r
 #
 #
 #
-model_dict = torch.load('/home/wenjing/storage/conv2d/2code/model.pt')
-# print(model_dict)
-# list = []
-for key in model_dict['model']:
-    print(key)
+# model_dict = torch.load('/home/wenjing/storage/conv2d/2code/model.pt')
+# # print(model_dict)
+# # list = []
+# for key in model_dict['model']:
+#     print(key)
 #     if 'init' in key:
 #         list.append(key)
 # new_model = {}
@@ -57,6 +57,7 @@ for key in model_dict['model']:
 # #     print(key, model_dict['model'][key].shape)
 # from torch.utils import model_zoo
 #
+# url = 'https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_pcl2mesh-5c0be168.pt'
 # url = 'https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_img2mesh_3-f786b04a.pt'
 # # url = 'https://s3.eu-central-1.amazonaws.com/avg-projects/occupancy_networks/models/onet_uncond_airplanes-26c9d089.pt'
 # model2 = model_zoo.load_url(url, progress=True)
@@ -66,10 +67,10 @@ for key in model_dict['model']:
 # for key in model2['model']:
 #     if 'encoder' not in key:
 #         list.append(key)
-#     print(key, model2['model'][key].shape)
+#     # print(key, model2['model'][key].shape)
 # new_model = {}
 # new_model['model'] = removekey(model2['model'], list)
-# torch.save(new_model, '/home/wenjing/uncon_encoder.pt')
+# torch.save(new_model, '/home/wenjing/storage/pointcloud_encoder.pt')
 # model_dict = torch.load('/home/wenjing/storage/psgn_encoder/model.pt')
 # for key in model_dict['model']:
 #     print(key)
@@ -78,10 +79,14 @@ for key in model_dict['model']:
 #     if 'init_pts' in key:
 #         print(key, model_dict['model'][key].shape, model_dict['model'][key])
 ###################dict convert##########################################
-
-# model2 = torch.load('/home/wenjing/Desktop/model_800000.pt')
-# list2 = []
-# for key in model2['model']:
+from torchvision import models
+model = torch.load('/home/wenjing/.cache/torch/checkpoints/resnet18-5c106cde.pth')
+model2 = torch.load('/home/wenjing/Desktop/oc_encoder.pt')
+# # list2 = []
+# for key in model:
+#     print(key)
+print(model['layer1.0.conv1.weight'].shape, model['layer1.0.conv1.weight'])
+print('*******', model2['model']['encoder.features.layer1.0.conv1.weight'].shape, model2['model']['encoder.features.layer1.0.conv1.weight'])
 #     if 'encoder' in key:
 #         list2.append(key)
 # # print(len(list2))
@@ -90,7 +95,7 @@ for key in model_dict['model']:
 # for key in model_dict['model']:
 #     if 'encoder' in key:
 #         list.append(key)
-# # print(len(list))
+# print(len(list))
 # dic = {}
 # for i in range(len(list)):
 #     dic[list[i]] = list2[i]

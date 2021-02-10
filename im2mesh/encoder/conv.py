@@ -54,15 +54,16 @@ class Resnet18(nn.Module):
         self.features = models.resnet18(pretrained=True)
         self.features.fc = nn.Sequential()
         if use_linear:
-            # self.fc = nn.Linear(512, c_dim)
-            self.fc = nn.Linear(512, 256)
+            self.fc = nn.Linear(512, c_dim)
+            # self.fc = nn.Linear(512, 256)
         elif c_dim == 512:
             self.fc = nn.Sequential()
         else:
             raise ValueError('c_dim must be 512 if use_linear is False')
 
-        for p in self.parameters():
-            p.requires_grad = False
+        for name, p in self.named_parameters():
+            if 'features' in name:
+                p.requires_grad = False
 
     def forward(self, x):
         if self.normalize:
@@ -95,6 +96,9 @@ class Resnet34(nn.Module):
             self.fc = nn.Sequential()
         else:
             raise ValueError('c_dim must be 512 if use_linear is False')
+        # for name, p in self.named_parameters():
+        #     if 'features' in name:
+        #         p.requires_grad = False
 
     def forward(self, x):
         if self.normalize:

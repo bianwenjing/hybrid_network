@@ -1,7 +1,7 @@
 method: onet
 data:
   input_type: pointcloud
-  # path: /home/wenjing/storage/data/ShapeNet
+  path: /home/wenjing/storage/data/ShapeNet
   pointcloud_n: 300
   pointcloud_noise: 0.005
   points_subsample: 2048 

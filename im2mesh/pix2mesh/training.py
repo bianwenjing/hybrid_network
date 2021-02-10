@@ -84,6 +84,8 @@ class Trainer(BaseTrainer):
         world_mat, camera_mat = camera_args['Rt'], camera_args['K']
         # points_transformed = points
         points_transformed = common.transform_points(points, world_mat)
+        # points_tr = common.project_to_camera(points_transformed, camera_mat)
+        # print('!!!!!!!!!!!!', torch.max(points_tr), torch.min(points_tr))
 
         # Transform GT normals to camera coordinate system
         world_normal_mat = world_mat[:, :, :3]

@@ -1,4 +1,4 @@
-method: onet_2d
+method: shared_2code
 data:
 #  path: /home/wenjing/storage/data/2d_ShapeNet
   path: /home/wenjing/storage/data/ShapeNet
@@ -6,24 +6,23 @@ data:
   img_size: 224
   points_subsample: 256
   dim: 2
+  padding: 0.1
 #  classes: ['03001627']
-#  img_with_camera: true
-#  with_transforms: true
+  img_with_camera: true
+  with_transforms: true
 model:
   encoder_latent: null
-  decoder: cbatchnorm
-#  decoder: simple
-  encoder: resnet18
-  c_dim: 256
+  decoder: simple_local
+  encoder: resnet18_shared
+#  c_dim_local: 0
+  c_dim_global: 256
+  c_dim_local: 256
   z_dim: 0
   z_resolution: 64
-  attention: true
-  positional_encoding: false
+  normalize: true
 training:
-#  out_dir:  /home/wenjing/storage/data2/onet_2d_cam_pe_normal
-  out_dir:  /home/wenjing/storage/data2/onet_2d_attention
-  load_dir: /home/wenjing/storage/oc_encoder.pt
-#  out_dir:  out/img/onet_2d
+  out_dir:  /home/wenjing/storage/shared/res18_freeze
+#  load_dir: /home/wenjing/storage/oc_encoder.pt
   batch_size: 64
   model_selection_metric: iou
   model_selection_mode: maximize
@@ -33,7 +32,7 @@ test:
   threshold: 0.2
   eval_mesh: true
   eval_pointcloud: false
-  model_file: /home/wenjing/storage/data2/onet_2d_attention/model_best.pt
+  model_file: /home/wenjing/storage/shared/res18_freeze/model_best.pt
 generation:
   batch_size: 100000
   refine: false

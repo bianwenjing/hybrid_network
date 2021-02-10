@@ -1,13 +1,13 @@
-method: onet_2d
+method: onet_2d_cam
 data:
-#  path: /home/wenjing/storage/data/2d_ShapeNet
-  path: /home/wenjing/storage/data/ShapeNet
+#  path: /home/wenjing/storage/data/ShapeNet
+  path: /home/wenjing/Downloads/ShapeNet
   img_folder: img_choy2016
   img_size: 224
-  points_subsample: 256
+  points_subsample: 128
   dim: 2
-#  classes: ['03001627']
-#  img_with_camera: true
+  classes: ['02828884']
+  img_with_camera: true
 #  with_transforms: true
 model:
   encoder_latent: null
@@ -17,13 +17,11 @@ model:
   c_dim: 256
   z_dim: 0
   z_resolution: 64
-  attention: true
-  positional_encoding: false
+  attention: false
+  positional_encoding: true
 training:
-#  out_dir:  /home/wenjing/storage/data2/onet_2d_cam_pe_normal
-  out_dir:  /home/wenjing/storage/data2/onet_2d_attention
-  load_dir: /home/wenjing/storage/oc_encoder.pt
-#  out_dir:  out/img/onet_2d
+#  out_dir:  /home/wenjing/storage/out/onet
+  out_dir:  out/img/onet_2d
   batch_size: 64
   model_selection_metric: iou
   model_selection_mode: maximize
@@ -33,12 +31,12 @@ test:
   threshold: 0.2
   eval_mesh: true
   eval_pointcloud: false
-  model_file: /home/wenjing/storage/data2/onet_2d_attention/model_best.pt
+#  model_file: /home/wenjing/Desktop/onet_2d_64/model_best.pt
 generation:
   batch_size: 100000
   refine: false
   n_x: 128
   n_z: 1
-  resolution_0: 64
+  resolution_0: 128
   upsampling_steps: 0
   generation_dir: pretrained

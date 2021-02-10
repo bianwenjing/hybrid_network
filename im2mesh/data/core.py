@@ -3,6 +3,7 @@ import logging
 from torch.utils import data
 import numpy as np
 import yaml
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ class Field(object):
     ''' Data fields class.
     '''
 
-    def load(self, data_path, idx, category):
+    def load(self, data_path, idx, category, img_index):
         ''' Loads a data point.
         Args:
             data_path (str): path to data file
@@ -105,8 +106,9 @@ class Shapes3dDataset(data.Dataset):
         data = {}
 
         for field_name, field in self.fields.items():
+            img_index = random.randint(0, 23)
             try:
-                field_data = field.load(model_path, idx, c_idx)
+                field_data = field.load(model_path, idx, c_idx, img_index)
             except Exception:
                 if self.no_except:
                     logger.warn(

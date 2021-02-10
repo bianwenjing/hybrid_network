@@ -1,31 +1,35 @@
-method: onet_1d
+method: onet_2d
 data:
+  input_type: pointcloud
 #  path: /home/wenjing/storage/data/ShapeNet
   path: /home/wenjing/Downloads/ShapeNet2
-  img_folder: img_choy2016
-  img_size: 224
+  pointcloud_n: 300
+  pointcloud_noise: 0.005
   points_subsample: 128
-  dim: 1
+  dim: 2
 #  classes: ['03001627']
-  img_with_camera: false
-  with_transforms: false
+#  img_with_camera: true
+#  with_transforms: true
 model:
   encoder_latent: null
   decoder: cbatchnorm
-  encoder: resnet18
-  c_dim: 256
+#  decoder: simple
+  encoder: pointnet_resnet
+  encoder_kwargs:
+    hidden_dim: 512
+  c_dim: 512
   z_dim: 0
   z_resolution: 64
   attention: false
-  positional_encoding: true
+  positional_encoding: false
 training:
 #  out_dir:  /home/wenjing/storage/out/onet
-  out_dir:  out/img/onet_2d
+  out_dir:  out/pointcloud/onet_2d
   batch_size: 64
   model_selection_metric: iou
   model_selection_mode: maximize
-  visualize_every: 20000
-  validate_every: 20000
+#  visualize_every: 20000
+#  validate_every: 20000
 test:
   threshold: 0.2
   eval_mesh: true

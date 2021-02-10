@@ -31,7 +31,7 @@ class OccupancyNetwork(nn.Module):
     '''
 
     def __init__(self, decoder, encoder=None, encoder_latent=None, p0_z=None,
-                 device=None):
+                 device=None, camera=False):
         super().__init__()
         if p0_z is None:
             p0_z = dist.Normal(torch.tensor([]), torch.tensor([]))
@@ -50,8 +50,9 @@ class OccupancyNetwork(nn.Module):
 
         self._device = device
         self.p0_z = p0_z
+        self.camera = camera
 
-    def forward(self, p, inputs, sample=True, **kwargs):
+    def forward(self, p, inputs, sample=True, camera_position=None, **kwargs):
         ''' Performs a forward pass through the network.
 
         Args:
@@ -62,10 +63,12 @@ class OccupancyNetwork(nn.Module):
         batch_size = p.size(0)
         c = self.encode_inputs(inputs)
         z = self.get_z_from_prior((batch_size,), sample=sample)
+        if self.camera:
+            c = torch.cat([c, camera_position], dim=1)
         p_r = self.decode(p, z, c, **kwargs)
         return p_r
 
-    def compute_elbo(self, p, occ, inputs, **kwargs):
+    def compute_elbo(self, p, occ, inputs, camera_position=None, **kwargs):
         ''' Computes the expectation lower bound.
 
         Args:
@@ -74,6 +77,8 @@ class OccupancyNetwork(nn.Module):
             inputs (tensor): conditioning input
         '''
         c = self.encode_inputs(inputs)
+        if self.camera:
+            c = torch.cat([c, camera_position], dim=1)
         q_z = self.infer_z(p, occ, c, **kwargs)
 
         z = q_z.rsample()

@@ -3,7 +3,7 @@ import torch.distributions as dist
 from torch import nn
 import os
 from im2mesh.encoder import encoder_dict
-from im2mesh.onet_1d import models, training, generation
+from im2mesh.onet_2d_shared import models, training, generation
 from im2mesh import data
 from im2mesh import config
 
@@ -18,44 +18,34 @@ def get_model(cfg, device=None, dataset=None, **kwargs):
     '''
     decoder = cfg['model']['decoder']
     encoder = cfg['model']['encoder']
-    encoder_latent = cfg['model']['encoder_latent']
     dim = cfg['data']['dim']
-    z_dim = cfg['model']['z_dim']
-    c_dim = cfg['model']['c_dim']
+    c_dim_local = cfg['model']['c_dim_local']
+    c_dim_global = cfg['model']['c_dim_global']
     decoder_kwargs = cfg['model']['decoder_kwargs']
     encoder_kwargs = cfg['model']['encoder_kwargs']
-    encoder_latent_kwargs = cfg['model']['encoder_latent_kwargs']
-    yz_resolution = cfg['model']['yz_resolution']
-    attention = cfg['model']['attention']
-    positional_encoding = cfg['model']['positional_encoding']
+    z_resolution = cfg['model']['z_resolution']
+    padding = cfg['data']['padding']
+    normalize_global_local = cfg['model']['normalize']
 
-    decoder = models.decoder_dict[decoder](yz_resolution=yz_resolution,
-        dim=dim, z_dim=z_dim, c_dim=c_dim, attention=attention, positional_encoding=positional_encoding,
+    decoder = models.decoder_dict[decoder](z_resolution=z_resolution,
+        dim=dim, c_dim_local=c_dim_local,c_dim_global=c_dim_global, padding=padding, normalize=normalize_global_local,
         **decoder_kwargs
     )
 
-    if z_dim != 0:
-        encoder_latent = models.encoder_latent_dict[encoder_latent](
-            z_resolution=yz_resolution,
-            dim=dim, z_dim=z_dim, c_dim=c_dim,
-            **encoder_latent_kwargs
-        )
-    else:
-        encoder_latent = None
 
     if encoder == 'idx':
-        encoder = nn.Embedding(len(dataset), c_dim)
+        encoder = nn.Embedding(len(dataset), c_dim_local)
     elif encoder is not None:
         encoder = encoder_dict[encoder](
-            c_dim=c_dim,
+            c_dim_local=c_dim_local, c_dim_global=c_dim_global,
             **encoder_kwargs
         )
     else:
         encoder = None
 
-    p0_z = get_prior_z(cfg, device)
+
     model = models.OccupancyNetwork(
-        decoder, encoder, encoder_latent, p0_z, device=device
+        decoder, encoder, device=device
     )
 
     return model
@@ -74,7 +64,7 @@ def get_trainer(model, optimizer, cfg, device, **kwargs):
     out_dir = cfg['training']['out_dir']
     vis_dir = os.path.join(out_dir, 'vis')
     input_type = cfg['data']['input_type']
-    yz_resolution = cfg['model']['yz_resolution']
+    z_resolution = cfg['model']['z_resolution']
     camera = cfg['data']['img_with_camera']
 
     trainer = training.Trainer(
@@ -82,7 +72,7 @@ def get_trainer(model, optimizer, cfg, device, **kwargs):
         device=device, input_type=input_type,
         vis_dir=vis_dir, threshold=threshold,
         eval_sample=cfg['training']['eval_sample'],
-        yz_resolution=yz_resolution,
+        z_resolution=z_resolution,
         camera=camera
     )
 
@@ -103,7 +93,7 @@ def get_generator(model, cfg, device, **kwargs):
         model,
         device=device,
         threshold=cfg['test']['threshold'],
-        yz_resolution=cfg['model']['yz_resolution'],
+        z_resolution=cfg['model']['z_resolution'],
         resolution0=cfg['generation']['resolution_0'],
         upsampling_steps=cfg['generation']['upsampling_steps'],
         sample=cfg['generation']['use_sampling'],
@@ -140,11 +130,11 @@ def get_data_fields(mode, cfg):
     points_transform = data.SubsamplePoints(cfg['data']['points_subsample'])
     # with_transforms = cfg['model']['use_camera']
     with_transforms = cfg['data']['with_transforms']
-    yz_resolution = cfg['model']['yz_resolution']
+    z_resolution = cfg['model']['z_resolution']
     fields = {}
-    fields['points'] = data.RayField1(
+    fields['points'] = data.RayField2(
         cfg['data']['points_file'], points_transform,
-        yz_resolution=yz_resolution,
+        z_resolution=z_resolution,
         with_transforms=with_transforms,
         unpackbits=cfg['data']['points_unpackbits'],
     )
@@ -154,9 +144,9 @@ def get_data_fields(mode, cfg):
         voxels_file = cfg['data']['voxels_file']
         voxels_file = None
         if points_iou_file is not None:
-            fields['points_iou'] = data.RayField1(
+            fields['points_iou'] = data.RayField2(
                 points_iou_file,
-                yz_resolution=yz_resolution,
+                z_resolution=z_resolution,
                 with_transforms=with_transforms,
                 unpackbits=cfg['data']['points_unpackbits'],
             )

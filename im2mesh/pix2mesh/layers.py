@@ -134,6 +134,7 @@ class GraphProjection(nn.Module):
             img (tensor): images (just fo visualisation purposes)
         '''
         points_img = common.project_to_camera(x, camera_mat)
+        # print('###########', points_img.shape, torch.max(points_img))
         points_img = points_img.unsqueeze(1)
         feats = []
         feats.append(x)

@@ -237,7 +237,7 @@ def transform_points(points, transform):
     if transform.size(2) == 4:
         R = transform[:, :, :3]
         t = transform[:, :, 3:]
-        # print('$$$$$$$$$$$$',t)
+
         points_out = points @ R.transpose(1, 2) + t.transpose(1, 2)
     elif transform.size(2) == 3:
         K = transform
@@ -280,7 +280,7 @@ class positional_encoding(object):
     def __call__(self, p):
         if self.func == 'sin_cos':
             out = []
-            p = 2.0 * p - 1.0 # chagne to the range [-1, 1]
+            # p = 2.0 * p - 1.0 # chagne to the range [-1, 1]
             for freq in self.freq_bands:
                 out.append(torch.sin(freq * p))
                 out.append(torch.cos(freq * p))

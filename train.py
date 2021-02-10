@@ -33,6 +33,7 @@ out_dir = cfg['training']['out_dir']
 batch_size = cfg['training']['batch_size']
 backup_every = cfg['training']['backup_every']
 exit_after = args.exit_after
+load_dir = cfg['training']['load_dir']
 
 model_selection_metric = cfg['training']['model_selection_metric']
 if cfg['training']['model_selection_mode'] == 'maximize':
@@ -85,7 +86,8 @@ checkpoint_io = CheckpointIO(out_dir, model=model, optimizer=optimizer)
 try:
     # load_dict = checkpoint_io.load('/home/wenjing/storage/oc_encoder.pt')
     # load_dict = checkpoint_io.load('/home/wenjing/uncon_encoder.pt')
-    load_dict = checkpoint_io.load('model.pt')
+    # load_dict = checkpoint_io.load('/home/wenjing/storage/pointcloud_encoder.pt')
+    load_dict = checkpoint_io.load(load_dir)
     # load_dict = checkpoint_io.load('/home/wenjing/Desktop/onet_2d/model_best.pt')
 except FileExistsError:
     load_dict = dict()

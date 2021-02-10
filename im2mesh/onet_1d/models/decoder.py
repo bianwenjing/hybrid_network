@@ -60,6 +60,7 @@ class Decoder(nn.Module):
         if self.c_dim != 0:
             net_c = self.fc_c(c).unsqueeze(1)
             net = net + net_c
+
         net = self.block0(net)
         net = self.block1(net)
         net = self.block2(net)

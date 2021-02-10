@@ -6,6 +6,8 @@ from im2mesh.layers import (
     ResnetBlockConv1d
 )
 from im2mesh.common import map2local
+from im2mesh.pos_encoding import encode_position
+import torch
 
 class Decoder(nn.Module):
     ''' Decoder class.
@@ -21,7 +23,7 @@ class Decoder(nn.Module):
     '''
 
     def __init__(self, z_resolution, dim=2, z_dim=128, c_dim=128,
-                 hidden_size=128, leaky=False, attention=False, positional_encoding=False):
+                 hidden_size=128, leaky=False, attention=False, positional_encoding=False, camera=False):
         super().__init__()
         self.z_dim = z_dim
         self.c_dim = c_dim
@@ -58,8 +60,11 @@ class Decoder(nn.Module):
             net = net + net_z
 
         if self.c_dim != 0:
+            # print('((((((', c.shape)  # [64, 256]
             net_c = self.fc_c(c).unsqueeze(1)
+            # print('@@@@@@@@@@@@', net.shape, net_c.shape)  # [64, 127, 128] # [64, 1, 128]
             net = net + net_c
+            # print('##', net.shape) # [64, 127, 128]
         net = self.block0(net)
         net = self.block1(net)
         net = self.block2(net)
@@ -85,23 +90,27 @@ class DecoderCBatchNorm(nn.Module):
     '''
 
     def __init__(self, z_resolution, dim=2, z_dim=128, c_dim=128,
-                 hidden_size=256, leaky=False, legacy=False, attention=False, positional_encoding=False):
+                 hidden_size=256, leaky=False, legacy=False, attention=False, positional_encoding=False, camera=False):
         super().__init__()
         self.z_dim = z_dim
+        self.c_dim = c_dim
         if not z_dim == 0:
             self.fc_z = nn.Linear(z_dim, hidden_size)
 
         ########positional encoding###########
         self.postional_encoding = positional_encoding
-
+        self.camera = camera
 
         if positional_encoding:
-            unit_size = 0.1
-            self.map2local = map2local(unit_size, pos_encoding='sin_cos')
-            self.fc_p = nn.Linear(40, hidden_size)
+            # unit_size = 0.1
+            # self.map2local = map2local(unit_size, pos_encoding='sin_cos')
+            self.fc_p = nn.Linear(42, hidden_size)
         else:
             self.fc_p = nn.Linear(dim, hidden_size)
             # self.fc_p = nn.Conv1d(dim, hidden_size, 1)
+        if camera:
+            c_dim = c_dim + hidden_size
+            self.fc_cam = nn.Linear(63, hidden_size)
         self.block0 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
         self.block1 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
         self.block2 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
@@ -119,9 +128,10 @@ class DecoderCBatchNorm(nn.Module):
         ###########attention
         self.attention = attention
         if attention:
-            encoder_layer = nn.TransformerEncoderLayer(d_model=c_dim, nhead=8)
+            encoder_layer = nn.TransformerEncoderLayer(d_model=hidden_size, nhead=8)
             self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=6)
         ########################
+
 
         if not leaky:
             self.actvn = F.relu
@@ -131,7 +141,10 @@ class DecoderCBatchNorm(nn.Module):
     def forward(self, p, z, c, **kwargs):
         if self.postional_encoding:
             p = p.float()
-            p = self.map2local(p)
+            # p = self.map2local(p)
+            # from [-0.55, 0.55] to [-1, 1]
+            p = p*2/1.1
+            p = encode_position(p, 10)
 
         net = self.fc_p(p)
 
@@ -139,9 +152,14 @@ class DecoderCBatchNorm(nn.Module):
             net_z = self.fc_z(z).unsqueeze(2)
             net = net + net_z
 
-        #attention
-        if self.attention:
-            net = self.transformer_encoder(net)
+        if self.camera:
+            c, camera_position = c[:, :self.c_dim], c[:, self.c_dim:]
+            camera_position = F.normalize(camera_position, dim = 1)
+            camera_position = encode_position(camera_position, 10)
+            camera_position = self.fc_cam(camera_position)
+            c = F.normalize(c, dim=1)
+            c = torch.cat([c, camera_position], dim=1)
+
         net = net.transpose(1, 2)
         # batch_size, D, T = p.size()
         net = self.block0(net, c)
@@ -150,8 +168,12 @@ class DecoderCBatchNorm(nn.Module):
         net = self.block3(net, c)
         net = self.block4(net, c)
 
+        net = net.transpose(1,2)
+        # attention
+        if self.attention:
+            net = self.transformer_encoder(net)
 
-        # print('#############', net.shape, self.actvn(self.bn(net, c)).shape) (64, 256, 1024)
+        net = net.transpose(1,2)
         out = self.fc_out(self.actvn(self.bn(net, c)))
         out = out.transpose(1,2)
 

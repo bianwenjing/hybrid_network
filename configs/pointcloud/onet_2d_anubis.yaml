@@ -1,0 +1,45 @@
+method: onet_2d
+data:
+  input_type: pointcloud
+  path: /home/wenjing/storage/data/2d_ShapeNet
+  #  path: /home/wenjing/storage/data/ShapeNet
+  pointcloud_n: 300
+  pointcloud_noise: 0.005
+  points_subsample: 256
+  dim: 2
+#  classes: ['03001627']
+#  img_with_camera: true
+#  with_transforms: true
+model:
+  encoder_latent: null
+  decoder: cbatchnorm
+#  decoder: simple
+  encoder: pointnet_resnet
+  encoder_kwargs:
+    hidden_dim: 512
+  c_dim: 512
+  z_dim: 0
+  z_resolution: 64
+  attention: false
+  positional_encoding: false
+training:
+  out_dir:  /home/wenjing/storage/pointcloud/onet_2d_fr
+  load_dir: /home/wenjing/storage/pointcloud_encoder.pt
+  batch_size: 64
+  model_selection_metric: iou
+  model_selection_mode: maximize
+#  visualize_every: 20000
+#  validate_every: 20000
+test:
+  threshold: 0.2
+  eval_mesh: true
+  eval_pointcloud: false
+#  model_file: /home/wenjing/Desktop/onet_2d_64/model_best.pt
+generation:
+  batch_size: 100000
+  refine: false
+  n_x: 128
+  n_z: 1
+  resolution_0: 64
+  upsampling_steps: 0
+  generation_dir: pretrained

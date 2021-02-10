@@ -1,7 +1,7 @@
 import yaml
 from torchvision import transforms
 from im2mesh import data
-from im2mesh import onet, r2n2, psgn, pix2mesh, dmc, combined, combined2, onet_2d, onet_2d_conv, onet_2d_2code, onet_1d
+from im2mesh import onet, r2n2, psgn, pix2mesh, dmc, combined, combined2, onet_2d, onet_2d_conv, onet_2d_2code, onet_1d, onet_2d_shared, onet_2d_cam, onet_2d_pointmap
 from im2mesh import preprocess
 
 
@@ -17,6 +17,9 @@ method_dict = {
     'conv_onet_2d': onet_2d_conv,
     'conv_2code': onet_2d_2code,
     'onet_1d': onet_1d,
+    'shared_2code': onet_2d_shared,
+    'onet_2d_cam': onet_2d_cam,
+    'onet_2d_pointmap': onet_2d_pointmap,
 }
 
 

@@ -22,15 +22,17 @@ def get_model(cfg, device=None, dataset=None, **kwargs):
     dim = cfg['data']['dim']
     z_dim = cfg['model']['z_dim']
     c_dim = cfg['model']['c_dim']
+
     decoder_kwargs = cfg['model']['decoder_kwargs']
     encoder_kwargs = cfg['model']['encoder_kwargs']
     encoder_latent_kwargs = cfg['model']['encoder_latent_kwargs']
     z_resolution = cfg['model']['z_resolution']
     attention = cfg['model']['attention']
     positional_encoding = cfg['model']['positional_encoding']
+    camera = cfg['data']['img_with_camera']
 
     decoder = models.decoder_dict[decoder](z_resolution=z_resolution,
-        dim=dim, z_dim=z_dim, c_dim=c_dim, attention=attention, positional_encoding=positional_encoding,
+        dim=dim, z_dim=z_dim, c_dim=c_dim, attention=attention, positional_encoding=positional_encoding,camera=camera,
         **decoder_kwargs
     )
 
@@ -55,7 +57,7 @@ def get_model(cfg, device=None, dataset=None, **kwargs):
 
     p0_z = get_prior_z(cfg, device)
     model = models.OccupancyNetwork(
-        decoder, encoder, encoder_latent, p0_z, device=device
+        decoder, encoder, encoder_latent, p0_z, device=device, camera=camera,
     )
 
     return model
@@ -110,6 +112,7 @@ def get_generator(model, cfg, device, **kwargs):
         refinement_step=cfg['generation']['refinement_step'],
         simplify_nfaces=cfg['generation']['simplify_nfaces'],
         preprocessor=preprocessor,
+        cam=cfg['data']['img_with_camera'],
     )
     return generator
 

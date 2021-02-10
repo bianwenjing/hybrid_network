@@ -7,10 +7,11 @@ import trimesh
 from im2mesh.data.core import Field
 from im2mesh.utils import binvox_rw
 import torch
+from im2mesh.utils.libmesh import check_mesh_contains
 
 class IndexField(Field):
     ''' Basic index field.'''
-    def load(self, model_path, idx, category):
+    def load(self, model_path, idx, category, img_index):
         ''' Loads the index field.
 
         Args:
@@ -31,7 +32,7 @@ class IndexField(Field):
 
 class CategoryField(Field):
     ''' Basic category field.'''
-    def load(self, model_path, idx, category):
+    def load(self, model_path, idx, category, img_index):
         ''' Loads the category field.
 
         Args:
@@ -70,7 +71,7 @@ class ImagesField(Field):
         self.random_view = random_view
         self.with_camera = with_camera
 
-    def load(self, model_path, idx, category):
+    def load(self, model_path, idx, category, img_index):
         ''' Loads the data point.
 
         Args:
@@ -82,7 +83,8 @@ class ImagesField(Field):
         files = glob.glob(os.path.join(folder, '*.%s' % self.extension))
         # files.sort()
         if self.random_view:
-            idx_img = random.randint(0, len(files)-1)
+            # idx_img = random.randint(0, len(files)-1)
+            idx_img = img_index
         else:
             idx_img = 0
         filename = files[idx_img]
@@ -140,7 +142,7 @@ class PointsField(Field):
         self.with_transforms = with_transforms
         self.unpackbits = unpackbits
 
-    def load(self, model_path, idx, category):
+    def load(self, model_path, idx, category, img_index):
         ''' Loads the data point.
 
         Args:
@@ -178,14 +180,34 @@ class PointsField(Field):
 
         return data
 class RayField2_cam(Field):
-    def __init__(self, file_name, transform=None, z_resolution=32, with_transforms=False, unpackbits=False):
+    def __init__(self, file_name, transform=None, z_resolution=32, with_transforms=False, img_folder=None):
         self.file_name = file_name
         self.transform = transform
         self.with_transforms = with_transforms
-        self.unpackbits = unpackbits
         self.z_resolution = z_resolution
+        self.folder_name = img_folder
 
-    def load(self, model_path, idx, category):
+    def get_rays(self, H, W, focal, c2w):
+        i, j = torch.meshgrid(torch.linspace(0, W - 1, W),
+                              torch.linspace(0, H - 1, H))  # pytorch's meshgrid has indexing='ij'
+        i = i.t() #transpose
+        j = j.t()
+
+        dirs = torch.stack([(i - W * .5) / focal, -(j - H * .5) / focal, -torch.ones_like(i)], -1)
+        # Rotate ray directions from camera frame to the world frame
+        rays_d = torch.sum(dirs[..., np.newaxis, :] * c2w[:3, :3],
+                           -1)  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
+        # Translate camera frame's origin to the world frame. It is the origin of all rays.
+        rays_o = c2w[:3, -1].expand(rays_d.shape)
+
+        i = torch.reshape(i, [-1, 1])
+        j = torch.reshape(j, [-1, 1])
+        points_xy = torch.cat([i, j], dim=1)
+
+        return rays_o, rays_d, points_xy
+
+
+    def load(self, model_path, idx, category, idx_img):
         ''' Loads the data point.
 
         Args:
@@ -193,42 +215,60 @@ class RayField2_cam(Field):
             idx (int): ID of data point
             category (int): index of category
         '''
-        file_path = os.path.join(model_path, self.file_name)  #load mesh
+        in_path = os.path.join(model_path, self.file_name)  #load mesh
         mesh = trimesh.load(in_path, process=False)
+        H = 137
+        W = 137
+        N_samples = self.z_resolution
 
-        points_dict = np.load(file_path)
-        points_xy = points_dict['points_xy']
+        folder = os.path.join(model_path, self.folder_name)
+        camera_file = os.path.join(folder, 'cameras.npz')
+        camera_dict = np.load(camera_file)
+        # world_mat = camera_dict['world_mat_%d' % idx_img].astype(np.float32)
+        # camera_mat = camera_dict['camera_mat_%d' % idx_img].astype(np.float32)
+        world_mat = torch.tensor(camera_dict['world_mat_%d' % idx_img])
+        camera_mat = torch.tensor(camera_dict['camera_mat_%d' % idx_img])
+        focal = camera_mat[0][0]
+
+        rays_o, rays_d, points_xy = self.get_rays(H, W, focal, world_mat)
+        # print('$$$$$$$$$$$$', rays_d.shape, rays_o.shape)
+
+        rays_o = torch.reshape(rays_o, [-1, 3]).float()
+        rays_d = torch.reshape(rays_d, [-1, 3]).float()
+
+        t_vals = torch.linspace(0., 1., steps=N_samples)
+        near = 0
+        far = -1
+        z_vals = near * (1. - t_vals) + far * (t_vals)
+        N_rays = rays_d.shape[0]
+        z_vals = z_vals.expand([N_rays, N_samples])
+        pts = rays_o[...,None,:] + rays_d[...,None,:] * z_vals[...,:,None] # [N_rays, N_samples, 3]
+        pts = pts.reshape(-1, 3).numpy()
+        points_xy = points_xy.numpy()
+        occupancies = check_mesh_contains(mesh, pts)
+        # points_dict = np.load(file_path)
+        # points_xy = points_dict['points_xy']
         # Break symmetry if given in float16:
 
         # points_xy = (points_xy - 0.5) * 1.1
-
         if points_xy.dtype == np.float16:
             points_xy = points_xy.astype(np.float32)
             points_xy += 1e-4 * np.random.randn(*points_xy.shape)
         else:
             points_xy = points_xy.astype(np.float32)
 
-        occupancies = points_dict['occupancies']
-
-        if self.unpackbits:
-            occupancies = np.unpackbits(occupancies)
-
-        occupancies = occupancies.reshape(2500, 128)
-        interval = int(128/self.z_resolution)
-        index = [i*interval for i in range(self.z_resolution)]
-        occupancies_r = occupancies[:, index]
-        occupancies_r = occupancies_r.astype(np.float32)
+        occupancies = occupancies.reshape(-1, N_samples)
+        occupancies = occupancies.astype(np.float32)
         data = {
             None: points_xy,
-            'occ': occupancies_r,
+            'occ': occupancies,
         }
-        if self.with_transforms:
-            data['loc'] = points_dict['loc'].astype(np.float32)
-            data['scale'] = points_dict['scale'].astype(np.float32)
+        # if self.with_transforms:
+        #     data['loc'] = points_dict['loc'].astype(np.float32)
+        #     data['scale'] = points_dict['scale'].astype(np.float32)
 
         if self.transform is not None:
             data = self.transform(data)
-
         return data
 
 class RayField2(Field):
@@ -239,7 +279,7 @@ class RayField2(Field):
         self.unpackbits = unpackbits
         self.z_resolution = z_resolution
 
-    def load(self, model_path, idx, category):
+    def load(self, model_path, idx, category, img_index):
         ''' Loads the data point.
 
         Args:
@@ -292,7 +332,7 @@ class RayField1(Field):
         self.unpackbits = unpackbits
         self.yz_resolution = yz_resolution
 
-    def load(self, model_path, idx, category):
+    def load(self, model_path, idx, category, img_index):
         ''' Loads the data point.
 
         Args:
@@ -350,7 +390,7 @@ class RayField(Field):
         self.transform = transform
         self.with_transforms = with_transforms
 
-    def load(self, model_path, idx, category):
+    def load(self, model_path, idx, category, img_index):
         ''' Loads the data point.
 
         Args:
@@ -395,7 +435,7 @@ class VoxelsField(Field):
         self.file_name = file_name
         self.transform = transform
 
-    def load(self, model_path, idx, category):
+    def load(self, model_path, idx, category, img_index):
         ''' Loads the data point.
 
         Args:
@@ -441,7 +481,7 @@ class PointCloudField(Field):
         self.transform = transform
         self.with_transforms = with_transforms
 
-    def load(self, model_path, idx, category):
+    def load(self, model_path, idx, category, img_index):
         ''' Loads the data point.
 
         Args:
@@ -497,7 +537,7 @@ class MeshField(Field):
         self.file_name = file_name
         self.transform = transform
 
-    def load(self, model_path, idx, category):
+    def load(self, model_path, idx, category, img_index):
         ''' Loads the data point.
 
         Args:

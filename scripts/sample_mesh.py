@@ -116,8 +116,8 @@ def process_path(in_path, args):
     if args.points_folder is not None:
         export_points(mesh, modelname, loc, scale, args)
 
-    # if args.mesh_folder is not None:
-    #     export_mesh(mesh, modelname, loc, scale, args)
+    if args.mesh_folder is not None:
+        export_mesh(mesh, modelname, loc, scale, args)
 
 
 def export_pointcloud(mesh, modelname, loc, scale, args):
@@ -203,27 +203,31 @@ def export_points(mesh, modelname, loc, scale, args):
     boxsize = 1 + args.points_padding
     ##################################################################
     # points_uniform = np.random.rand(n_points_uniform, 3)
-    # 2d onet
-    # num_xy = 2500
-    # num_z = 128
-    # points_xy = np.random.rand(num_xy, 2)
-    # points_uniform_xy = np.repeat(points_xy, num_z, axis=0)
-    # points_uniform_z = np.linspace(0, 1, num=num_z, endpoint=False)
-    # points_uniform_z = np.expand_dims(points_uniform_z, axis=1)
-    # points_uniform_z = np.repeat(points_uniform_z, num_xy, axis=1).transpose(1,0)
-    # points_uniform_z = np.reshape(points_uniform_z, (-1,1))
-    # points_uniform = np.concatenate([points_uniform_xy, points_uniform_z], axis=1)
-    #1d onet
-    num_x = 100
-    num_yz = 65
-    points_x_o = np.random.rand(num_x, 1)
-    points_x = np.repeat(points_x_o, num_yz ** 2)
-    points_x = np.expand_dims(points_x, axis=1)
-    points_yz = make_2d_grid((0,)*2, (1,)*2, (num_yz,)*2).numpy()
-    points_yz = np.expand_dims(points_yz, axis=0)
-    points_yz = np.repeat(points_yz, num_x, axis=0).reshape(num_x * num_yz ** 2, 2)
-    points_uniform = np.concatenate([points_x, points_yz], axis=1)
+    ## 2d onet
+    num_xy = 2500
+    num_z = 128
+    points_xy = np.random.rand(num_xy, 2)
+    points_uniform_xy = np.repeat(points_xy, num_z, axis=0)
+    points_uniform_z = np.linspace(0, 1, num=num_z, endpoint=False)
+    points_uniform_z = np.expand_dims(points_uniform_z, axis=1)
+    points_uniform_z = np.repeat(points_uniform_z, num_xy, axis=1).transpose(1,0)
+    points_uniform_z = np.reshape(points_uniform_z, (-1,1))
+    points_uniform = np.concatenate([points_uniform_xy, points_uniform_z], axis=1)
+    #############################################################################
+    # #1d onet
+    # num_x = 100
+    # num_yz = 65
+    # points_x_o = np.random.rand(num_x, 1)
+    # points_x = np.repeat(points_x_o, num_yz ** 2)
+    # points_x = np.expand_dims(points_x, axis=1)
+    # points_yz = make_2d_grid((0,)*2, (1,)*2, (num_yz,)*2).numpy()
+    # points_yz = np.expand_dims(points_yz, axis=0)
+    # points_yz = np.repeat(points_yz, num_x, axis=0).reshape(num_x * num_yz ** 2, 2)
+    # points_uniform = np.concatenate([points_x, points_yz], axis=1)
     #################################################################
+    #view centered
+
+    ##################################################################
     points_uniform = boxsize * (points_uniform - 0.5)
     points_surface = mesh.sample(n_points_surface)
     points_surface += args.points_sigma * np.random.randn(n_points_surface, 3)
