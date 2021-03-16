@@ -8,7 +8,7 @@ from im2mesh.common import (
 )
 from im2mesh.utils import visualize as vis
 from im2mesh.training import BaseTrainer
-
+import im2mesh.common as common
 
 class Trainer(BaseTrainer):
     ''' Trainer object for the Occupancy Network.
@@ -142,7 +142,9 @@ class Trainer(BaseTrainer):
         with torch.no_grad():
             p_r = self.model(p, inputs, sample=self.eval_sample, **kwargs)
 
+        # print('%%%%%%%%%%%%', p_r.logits.shape) (12, 32^3)
         occ_hat = p_r.probs.view(batch_size, *shape)
+        # print('$$$$$$$$$$$', occ_hat.shape)  (12, 32, 32, 32)
         voxels_out = (occ_hat >= self.threshold).cpu().numpy()
 
         for i in trange(batch_size):
@@ -163,15 +165,21 @@ class Trainer(BaseTrainer):
         occ = data.get('points.occ').to(device)
         inputs = data.get('inputs', torch.empty(p.size(0), 0)).to(device)
 
-
-
-
         kwargs = {}
-
-
+        ##########################################################33
+        camera_args = common.get_camera_args(
+            data, 'points.loc', 'points.scale', device=self.device)
+        # # Transform GT data into camera coordinate system
+        world_mat, camera_mat = camera_args['Rt'], camera_args['K']
+        # p = p/1.1
+        points_transformed = common.transform_points(p, world_mat)
+        points_projection = common.project_to_camera(points_transformed, camera_mat)
+        ########################################################################3
         c = self.model.encode_inputs(inputs)
         q_z = self.model.infer_z(p, occ, c, **kwargs)
         z = q_z.rsample()
+        # print('$$$$$$$$$$$$', z.shape) (64,128)
+
 
         # KL-divergence
         kl = dist.kl_divergence(q_z, self.model.p0_z).sum(dim=-1)
@@ -179,10 +187,12 @@ class Trainer(BaseTrainer):
 
         # print('########3333', p.shape)  [64, 2048, 3]
 
+
         # General points
         logits = self.model.decode(p, z, c, **kwargs).logits
         loss_i = F.binary_cross_entropy_with_logits(
             logits, occ, reduction='none')
+        # print('$$$$$$$$$$$$',loss_i.sum(-1).mean().shape )  # (64,2048) sum(-1) => 64
         loss = loss + loss_i.sum(-1).mean()
 
         return loss

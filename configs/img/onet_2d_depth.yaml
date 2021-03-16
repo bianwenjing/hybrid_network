@@ -1,0 +1,53 @@
+method: onet_2d_depth
+data:
+#  path: /home/wenjing/storage/data/ShapeNet
+  path: /home/wenjing/Downloads/DVR
+#  img_folder: img_choy2016
+#  img_size: 224
+  points_subsample: 127
+  dim: 2
+  classes: ['02933112']
+  img_with_camera: true
+  with_transforms: true
+
+  img_folder: image
+  img_size: null
+  img_size_input: 224  # img_choy2016
+model:
+  encoder_latent: null
+#  decoder: simple_local
+  decoder: cbatchnorm_local
+  encoder: resnet18_shared
+  c_dim_local: 32
+  c_dim_global: 256
+  z_resolution: 64
+#  attention: true
+  positional_encoding: true
+  normalize: true
+
+  lambda_depth: 10.
+training:
+  out_dir:  out/img/onet_2d
+  load_dir: /home/wenjing/oc_encoder.pt
+  batch_size: 1
+  model_selection_metric: loss
+  model_selection_mode: minimize
+  visualize_every: 20000
+  validate_every: 20000
+
+  n_training_points: 128
+  n_eval_points: 128
+  lr: 0.0001
+test:
+  threshold: 0.2
+  eval_mesh: true
+  eval_pointcloud: false
+#  model_file: /home/wenjing/Desktop/onet_2d_64/model_best.pt
+generation:
+  batch_size: 100000
+  refine: false
+  n_x: 128
+  n_z: 1
+  resolution_0: 64
+  upsampling_steps: 0
+  generation_dir: pretrained

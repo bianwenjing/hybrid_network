@@ -2,7 +2,6 @@ method: onet
 data:
   dataset: Shapes3D
   path: /home/wenjing/Downloads/ShapeNet
-#  path: /home/wenjing/storage/data/ShapeNet
   classes: null
   input_type: img
   train_split: train
@@ -28,6 +27,23 @@ data:
   pointcloud_noise: 0.05
   voxels_file: 'model.binvox'
   with_transforms: false
+
+  n_views_input: 0
+  depth_folder: depth
+  img_folder_input: img_choy2016
+  visual_hull_depth_folder: visual_hull_depth
+  mask_folder: mask
+  img_extension: png
+  img_extension_input: jpg
+  depth_extension: exr
+  mask_extension: png
+  img_size_input: 224
+  img_with_mask: true
+  cache_fields: false
+  split_model_for_images: false
+  depth_from_visual_hull: false
+  depth_range: [0, 2.4]
+  ignore_image_idx: []
 model:
   decoder: simple
   encoder: resnet18
@@ -43,6 +59,8 @@ model:
   attention: false
   positional_encoding: false
   normalize: false
+
+  lambda_depth: 0.
 training:
   out_dir:  out/default
   load_dir: model.pt
@@ -57,6 +75,8 @@ training:
   model_selection_mode: minimize
   #############
   consistency_loss: false
+  lr: 0.0001
+  scheduler_milestones: [750, 1000]
 test:
   threshold: 0.5
   eval_mesh: true

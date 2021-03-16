@@ -82,6 +82,9 @@ class ResnetPointnet(nn.Module):
         self.actvn = nn.ReLU()
         self.pool = maxpool
 
+        for name, p in self.named_parameters():
+            p.requires_grad = False
+
     def forward(self, p):
         batch_size, T, D = p.size()
 

@@ -104,7 +104,7 @@ class Generator3D(object):
         return dist_max
     def partial_mesh(self, points_psgn, z, c=None, **kwargs):
         threshold = np.log(self.threshold) - np.log(1. - self.threshold)
-        box_size = 0.03
+        box_size = 0.06
         nx = 2
         upsampling_steps = 1
         points_psgn = points_psgn.squeeze(0)
@@ -121,7 +121,6 @@ class Generator3D(object):
                 pointsf = box_size * make_3d_grid(
                     (-0.5,) * 3, (0.5,) * 3, (nx,) * 3
                 )
-                # print('@@@@@@@@@@@@@', p)
                 pointsf = torch.FloatTensor(pointsf).to(self.device) + p
                 # print('%%%%%%%%%%%%%%', pointsf)
                 values = self.eval_points(pointsf, z, c, **kwargs).cpu().numpy()
@@ -181,10 +180,11 @@ class Generator3D(object):
                 # print('%%%%%%%%%%%%%%%%%%%', occ_psgn.probs-self.threshold)
 
         mesh = self.partial_mesh(points_psgn, z, c, **kwargs)
-
-        # points_psgn = points_psgn.detach().cpu().numpy()
-        # occ_psgn = occ_psgn.squeeze(0).detach().cpu().numpy()
-        # # mesh = meshlab_poisson(points)
+        # mesh = 0
+        #
+        # points_psgn = points_psgn.squeeze(0).detach().cpu().numpy()
+        # # occ_psgn = occ_psgn.squeeze(0).detach().cpu().numpy()
+        # mesh = meshlab_poisson(points_psgn)
         # in_points = points_psgn[occ_psgn>self.threshold]
         # out_points = points_psgn[occ_psgn<self.threshold]
         # max_min_dist = self.max_min_dist(points_psgn)
@@ -215,6 +215,7 @@ class Generator3D(object):
                     pointsf = torch.FloatTensor(points).to(self.device)
                     # Normalize to bounding box
                     pointsf = pointsf / mesh_extractor.resolution
+                    # print('$$$$$$$$$$$$$$$$', pointsf)
                     pointsf = box_size * (pointsf - 0.5)
                     # Evaluate model and update
                     values = self.eval_points(

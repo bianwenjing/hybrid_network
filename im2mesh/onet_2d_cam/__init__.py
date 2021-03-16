@@ -1,4 +1,4 @@
-from im2mesh.onet_2d import (
+from im2mesh.onet_2d_cam import (
     config, generation, training, models
 )
 

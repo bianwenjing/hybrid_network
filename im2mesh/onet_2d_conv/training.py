@@ -25,7 +25,7 @@ class Trainer(BaseTrainer):
     '''
 
     def __init__(self, model, optimizer, device=None, input_type='img',
-                 vis_dir=None, threshold=0.5, eval_sample=False, z_resolution=32):
+                 vis_dir=None, threshold=0.5, eval_sample=False, z_resolution=32, camera=False):
         self.model = model
         self.optimizer = optimizer
         self.device = device
@@ -34,6 +34,7 @@ class Trainer(BaseTrainer):
         self.threshold = threshold
         self.eval_sample = eval_sample
         self.z_resolution = z_resolution
+        self.camera = camera
 
         if vis_dir is not None and not os.path.exists(vis_dir):
             os.makedirs(vis_dir)

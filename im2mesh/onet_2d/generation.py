@@ -10,7 +10,7 @@ from im2mesh.common import make_2d_grid
 from im2mesh.utils.libsimplify import simplify_mesh
 from im2mesh.utils.libmise import MISE
 import time
-
+import im2mesh.common as common
 
 class Generator3D(object):
     '''  Generator class for Occupancy Networks.
@@ -38,7 +38,7 @@ class Generator3D(object):
                  resolution0=16, upsampling_steps=3,
                  with_normals=False, padding=0.1, sample=False,
                  simplify_nfaces=None,
-                 preprocessor=None):
+                 preprocessor=None, cam=False):
         self.model = model.to(device)
         self.points_batch_size = points_batch_size
         self.refinement_step = refinement_step
@@ -52,6 +52,7 @@ class Generator3D(object):
         self.simplify_nfaces = simplify_nfaces
         self.preprocessor = preprocessor
         self.z_resolution = z_resolution
+        self.cam = cam
 
     def generate_mesh(self, data, return_stats=True):
         ''' Generates the output mesh.
@@ -66,6 +67,15 @@ class Generator3D(object):
 
         inputs = data.get('inputs', torch.empty(1, 0)).to(device)
         kwargs = {}
+
+        if self.cam:
+            camera_args = common.get_camera_args(
+                data, 'points.loc', 'points.scale', device=self.device)
+            # # Transform GT data into camera coordinate system
+            world_mat, camera_mat = camera_args['Rt'], camera_args['K']
+            camera_position = world_mat[:, :3, -1]
+        else:
+            camera_position = None
 
         # Preprocess if requires
         if self.preprocessor is not None:
@@ -82,7 +92,7 @@ class Generator3D(object):
 
         z = self.model.get_z_from_prior((1,), sample=self.sample).to(device)
         ###########################################################
-        mesh = self.generate_from_latent(z, c, stats_dict=stats_dict, **kwargs)
+        mesh = self.generate_from_latent(z, c, cam_position=camera_position, stats_dict=stats_dict, **kwargs)
         ######################################################################
 
         if return_stats:
@@ -90,7 +100,7 @@ class Generator3D(object):
         else:
             return mesh
 
-    def generate_from_latent(self, z, c=None, stats_dict={}, **kwargs):
+    def generate_from_latent(self, z, c=None, cam_position=None, stats_dict={}, **kwargs):
         ''' Generates mesh from latent.
 
         Args:
@@ -113,7 +123,7 @@ class Generator3D(object):
                 (-0.5,)*2, (0.5,)*2, (nx,)*2
             )
             ####################################
-            values = self.eval_points(pointsf, z, c, **kwargs).cpu().numpy()
+            values = self.eval_points(pointsf, z, c, cam_position=cam_position, **kwargs).cpu().numpy()
             ###to do
             #add the endpoint occupancy for z axis
             end_pad = np.zeros((values.shape[0], 1)) - 1e6
@@ -147,7 +157,7 @@ class Generator3D(object):
         mesh = self.extract_mesh(value_grid, z, c, stats_dict=stats_dict)
         return mesh
 
-    def eval_points(self, p, z, c=None, **kwargs):
+    def eval_points(self, p, z, c=None, cam_position=None, **kwargs):
         ''' Evaluates the occupancy values for the points.
 
         Args:
@@ -161,6 +171,8 @@ class Generator3D(object):
         for pi in p_split:
             pi = pi.unsqueeze(0).to(self.device)
             with torch.no_grad():
+                if self.cam:
+                    c = torch.cat([c, cam_position], dim=1)
                 occ_hat = self.model.decode(pi, z, c, **kwargs).logits
 
             occ_hats.append(occ_hat.squeeze(0).detach().cpu())
@@ -212,8 +224,6 @@ class Generator3D(object):
             normals = None
 
         # Create mesh
-        # print('!!!!!!', len(vertices))
-        # print('%%%%%', triangles)
         mesh = trimesh.Trimesh(vertices, triangles,
                                vertex_normals=normals,
                                process=False)

@@ -1,5 +1,5 @@
 import torch.nn as nn
-from im2mesh.psgn.models.decoder import Decoder
+from im2mesh.psgn_z.models.decoder import Decoder
 from im2mesh.psgn.models.psgn_2branch import PCGN_2Branch
 
 import torch
@@ -60,13 +60,14 @@ class CombinedNetwork(nn.Module):
     '''
 
     def __init__(self, decoder_oc, decoder_psgn, encoder=None, encoder_latent=None, p0_z=None,
-                 device=None):
+                 device=None, consistency_loss=False):
         super().__init__()
         if p0_z is None:
             p0_z = dist.Normal(torch.tensor([]), torch.tensor([]))
 
         self.decoder_oc = decoder_oc.to(device)
         self.decoder_psgn = decoder_psgn.to(device)
+        self.consistency_loss = consistency_loss
 
         if encoder_latent is not None:
             self.encoder_latent = encoder_latent.to(device)
@@ -92,9 +93,8 @@ class CombinedNetwork(nn.Module):
         batch_size = p.size(0)
         c = self.encode_inputs(inputs)
         z = self.get_z_from_prior((batch_size,), sample=sample)
-        p_r, points = self.decode(p, z, c, **kwargs)
-
-        return p_r, points
+        p_r, p_r_psgn, points = self.decode(p, z, c, **kwargs)
+        return p_r, p_r_psgn, points
 
     def compute_elbo(self, p, occ, inputs, **kwargs):
         ''' Computes the expectation lower bound.
@@ -107,7 +107,7 @@ class CombinedNetwork(nn.Module):
         c = self.encode_inputs(inputs)
         q_z = self.infer_z(p, occ, c, **kwargs)
         z = q_z.rsample()
-        p_r , points = self.decode(p, z, c, **kwargs)
+        p_r , p_r_psgn, points = self.decode(p, z, c, **kwargs)
 
         rec_error = -p_r.log_prob(occ).sum(dim=-1)
         kl = dist.kl_divergence(q_z, self.p0_z).sum(dim=-1)
@@ -129,6 +129,10 @@ class CombinedNetwork(nn.Module):
             c = torch.empty(inputs.size(0), 0)
 
         return c
+    def decode_original(self, p, z, c, **kwargs):
+        logits = self.decoder_oc(p, z, c, **kwargs)
+        p_r = dist.Bernoulli(logits=logits)
+        return p_r
 
     def decode(self, p, z, c, **kwargs):
         ''' Returns occupancy probabilities for the sampled points.
@@ -138,11 +142,24 @@ class CombinedNetwork(nn.Module):
             z (tensor): latent code z
             c (tensor): latent conditioned code c
         '''
-        points = self.decoder_psgn(c)
+        points = self.decoder_psgn(z, c)
         logits = self.decoder_oc(p, z, c, **kwargs)
         p_r = dist.Bernoulli(logits=logits)
+        if self.consistency_loss:
+            logits_psgn = self.decoder_oc(points, z, c, **kwargs)
+            p_r_psgn = dist.Bernoulli(logits=logits_psgn)
+        else:
+            p_r_psgn = None
+        return p_r, p_r_psgn, points
+    def decode2(self, z, c, **kwargs):
+        '''
+        decode use only psgn points
+        '''
+        points = self.decoder_psgn(z, c)
+        logits_psgn = self.decoder_oc(points, z, c, **kwargs)
+        p_r_psgn = dist.Bernoulli(logits=logits_psgn)
+        return p_r_psgn, points
 
-        return p_r, points
 
     def infer_z(self, p, occ, c, **kwargs):
         ''' Infers z.

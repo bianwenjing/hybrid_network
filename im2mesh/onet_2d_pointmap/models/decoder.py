@@ -65,6 +65,9 @@ class LocalDecoder(nn.Module):
 
     def forward(self,p, p_project, c_global, c_local, **kwargs):
         batch_size, T, D = p.size()
+        # print('((((((((', p)
+        p_map = torch.zeros(batch_size, T, 224, 224)
+        # print('********', p_map.shape)
         # print('%%%%%%%%%%%%%%', p.shape)  #[32,8192,2]
         # print('$$$$$$$$$$$$$$', c_local.shape, c_global.shape)  #(32, 32, 112, 112]) torch.Size([32, 256]
 

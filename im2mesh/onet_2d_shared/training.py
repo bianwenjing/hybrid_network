@@ -214,19 +214,21 @@ class Trainer(BaseTrainer):
             points = points.view(batch_size, -1, 3)
             points_transformed = common.transform_points(points, world_mat)
             points_projection = common.project_to_camera(points_transformed, camera_mat)
+            # print('@@@@@@@@@', points_projection[points_projection>1].shape, points_projection[points_projection<-1].shape,
+            #       points_projection[points_projection<1].shape)
             # print('###########', points_projection.shape, torch.max(points_projection), torch.min(points_projection))
+        else:
+            points_projection = p_xy
 
         c, c_local = self.model.encode_inputs(inputs)
         # print('###########', c.shape) # [32, 32, 224, 224]
 
+
         if self.camera:
             logits = self.model.decode(p_xy, points_projection, c, c_local, **kwargs).logits
         else:
-            logits = self.model.decode(p_xy, c, c_local, **kwargs).logits
+            logits = self.model.decode(p_xy, p_xy, c, c_local, **kwargs).logits
         # print('$$$$$$$$$$$$', logits.shape) #[64, 1024, 32]
-        # print('###########', occ_z.shape)
-
-
 
         loss_i = F.binary_cross_entropy_with_logits(
             logits, occ_z, reduction='none')

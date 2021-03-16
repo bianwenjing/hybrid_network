@@ -12,7 +12,7 @@ encoder_latent_dict = {
 decoder_dict = {
     'simple': decoder.Decoder,
     'cbatchnorm': decoder.DecoderCBatchNorm,
-    'cbatchnorm_or': decoder.DecoderCBatchNorm_pe,
+    'cbatchnorm_or': decoder.DecoderCBatchNorm_or,
     'cbatchnorm2': decoder.DecoderCBatchNorm2,
     'batchnorm': decoder.DecoderBatchNorm,
     'cbatchnorm_noresnet': decoder.DecoderCBatchNormNoResnet,

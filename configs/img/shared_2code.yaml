@@ -12,11 +12,12 @@ data:
   with_transforms: true
 model:
   encoder_latent: null
-  decoder: simple_local
+#  decoder: simple_local
+  decoder: cbatchnorm_local
   encoder: resnet18_shared
 #  c_dim_local: 0
-  c_dim_local: 256
-  c_dim_global: 0
+  c_dim_local: 32
+  c_dim_global: 256
   z_dim: 0
   z_resolution: 64
 training:

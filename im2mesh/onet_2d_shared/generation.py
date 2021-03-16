@@ -10,7 +10,7 @@ from im2mesh.common import make_2d_grid
 from im2mesh.utils.libsimplify import simplify_mesh
 from im2mesh.utils.libmise import MISE
 import time
-
+import im2mesh.common as common
 
 class Generator3D(object):
     '''  Generator class for Occupancy Networks.
@@ -38,7 +38,7 @@ class Generator3D(object):
                  resolution0=16, upsampling_steps=3,
                  with_normals=False, padding=0.1, sample=False,
                  simplify_nfaces=None,
-                 preprocessor=None):
+                 preprocessor=None, camera=True):
         self.model = model.to(device)
         self.points_batch_size = points_batch_size
         self.refinement_step = refinement_step
@@ -52,6 +52,7 @@ class Generator3D(object):
         self.simplify_nfaces = simplify_nfaces
         self.preprocessor = preprocessor
         self.z_resolution = z_resolution
+        self.camera = camera
 
     def generate_mesh(self, data, return_stats=True):
         ''' Generates the output mesh.
@@ -82,7 +83,7 @@ class Generator3D(object):
 
         # z = self.model.get_z_from_prior((1,), sample=self.sample).to(device)
         ###########################################################
-        mesh = self.generate_from_latent(c, c_local, stats_dict=stats_dict, **kwargs)
+        mesh = self.generate_from_latent(c, c_local, data, stats_dict=stats_dict, **kwargs)
         ######################################################################
 
         if return_stats:
@@ -90,7 +91,7 @@ class Generator3D(object):
         else:
             return mesh
 
-    def generate_from_latent(self, c=None, c_local=None, stats_dict={}, **kwargs):
+    def generate_from_latent(self, c=None, c_local=None, data=None, stats_dict={}, **kwargs):
         ''' Generates mesh from latent.
 
         Args:
@@ -112,10 +113,26 @@ class Generator3D(object):
             pointsf = box_size * make_2d_grid(
                 (-0.5,)*2, (0.5,)*2, (nx,)*2
             )
+            pointsf = pointsf.unsqueeze(0).to(self.device)
 
+            camera_args = common.get_camera_args(
+                data, 'points.loc', 'points.scale', device=self.device)
+            # # Transform GT data into camera coordinate system
+            world_mat, camera_mat = camera_args['Rt'], camera_args['K']
+            batch_size, D, T = pointsf.size()
+            z_coor = torch.linspace(0, 1, self.z_resolution + 1)[:-1].unsqueeze(1).to(self.device)
+            z_coor = 1.1 * (z_coor - 0.5)
+            z_coor = z_coor.expand(batch_size, D, *z_coor.size())
+            xy_coor = pointsf.unsqueeze(2)
+            xy_coor = xy_coor.expand(-1, -1, 64, -1)
+            points = torch.cat([xy_coor, z_coor], dim=3)
+            points = points.view(batch_size, -1, 3)
+            points_transformed = common.transform_points(points, world_mat)
+            points_projection = common.project_to_camera(points_transformed, camera_mat)
+            # print(')))))))))))))', points_projection.shape)
             ####################################
-            values = self.eval_points(pointsf, c, c_local, **kwargs).cpu().numpy()
-            ###to do
+            values = self.eval_points(pointsf, points_projection, c, c_local, **kwargs).cpu().numpy()
+            values = values[0]
             ##add the endpoint occupancy for z axis
             end_pad = np.zeros((values.shape[0], 1)) - 1e6
             values = np.concatenate((values, end_pad), axis=1)
@@ -148,7 +165,7 @@ class Generator3D(object):
         mesh = self.extract_mesh(value_grid, c, c_local, stats_dict=stats_dict)
         return mesh
 
-    def eval_points(self, p, c=None, c_local=None, **kwargs):
+    def eval_points(self, p, p_projected, c=None, c_local=None, **kwargs):
         ''' Evaluates the occupancy values for the points.
 
         Args:
@@ -156,17 +173,18 @@ class Generator3D(object):
             z (tensor): latent code z
             c (tensor): latent conditioned code c
         '''
-        p_split = torch.split(p, self.points_batch_size)
-        occ_hats = []
+        # p_split = torch.split(p, self.points_batch_size)
+        # p_projected = torch.split(p_projected, self.points_batch_size)
 
-        for pi in p_split:
-            pi = pi.unsqueeze(0).to(self.device)
-            with torch.no_grad():
-                occ_hat = self.model.decode(pi, c, c_local, **kwargs).logits
 
-            occ_hats.append(occ_hat.squeeze(0).detach().cpu())
+        # for pi in p_split:
 
-        occ_hat = torch.cat(occ_hats, dim=0)
+        with torch.no_grad():
+            occ_hat = self.model.decode(p, p_projected, c, c_local, **kwargs).logits
+
+        # occ_hats.append(occ_hat.squeeze(0).detach().cpu())
+
+        occ_hat = occ_hat.detach()
 
         return occ_hat
 

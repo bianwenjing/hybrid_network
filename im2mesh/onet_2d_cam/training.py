@@ -77,21 +77,28 @@ class Trainer(BaseTrainer):
         kwargs = {}
         # print('@@@@@@@@@@22', points.shape) (10, 2048, 3)
 
-        with torch.no_grad():
-            elbo, rec_error, kl = self.model.compute_elbo(
-                points_xy, occ_z, inputs, **kwargs)
-
-        eval_dict['loss'] = -elbo.mean().item()
-        eval_dict['rec_error'] = rec_error.mean().item()
-        eval_dict['kl'] = kl.mean().item()
-
         # Compute iou
         batch_size = points_xy.size(0)
 
         # print('@@@@@@@@@@', points_iou.shape) #(10, 100000, 3)
+        if self.camera:
+            camera_args = common.get_camera_args(
+                data, 'points.loc', 'points.scale', device=self.device)
+            # # Transform GT data into camera coordinate system
+            world_mat, camera_mat = camera_args['Rt'], camera_args['K']
+            batch_size, D, T = points_iou.size()
+            z_coor = torch.linspace(0, 1, self.z_resolution + 1)[:-1].unsqueeze(1).to(device)
+            z_coor = 1.1 * (z_coor - 0.5)
+            z_coor = z_coor.expand(batch_size, D, *z_coor.size())
+            xy_coor = points_iou.unsqueeze(2)
+            xy_coor = xy_coor.expand(-1, -1, 64, -1)
+            points = torch.cat([xy_coor, z_coor], dim=3)
+            points = points.view(batch_size, -1, 3)
+            points_transformed = common.transform_points(points, world_mat)
+            points_projection = common.project_to_camera(points_transformed, camera_mat)
 
         with torch.no_grad():
-            p_out = self.model(points_iou, inputs,
+            p_out = self.model(points_iou, points_projection, inputs,
                                sample=self.eval_sample, **kwargs)
 
 
@@ -149,8 +156,25 @@ class Trainer(BaseTrainer):
         kwargs = {}
 
         # print('#########3', p.shape)  #(12, 32^2, 2)
+
+        if self.camera:
+            camera_args = common.get_camera_args(
+                data, 'points.loc', 'points.scale', device=self.device)
+            # # Transform GT data into camera coordinate system
+            world_mat, camera_mat = camera_args['Rt'], camera_args['K']
+            batch_size, D, T = p.size()
+            z_coor = torch.linspace(0, 1, self.z_resolution + 1)[:-1].unsqueeze(1).to(device)
+            z_coor = 1.1 * (z_coor-0.5)
+            z_coor = z_coor.expand(batch_size, D, *z_coor.size())
+            xy_coor = p.unsqueeze(2)
+            xy_coor = xy_coor.expand(-1, -1, 64, -1)
+            points = torch.cat([xy_coor, z_coor], dim=3)
+            points = points.view(batch_size, -1, 3)
+            points_transformed = common.transform_points(points, world_mat)
+            points_projection = common.project_to_camera(points_transformed, camera_mat)
+
         with torch.no_grad():
-            p_r = self.model(p, inputs, sample=self.eval_sample, **kwargs)
+            p_r = self.model(p, points_projection, inputs, sample=self.eval_sample, **kwargs)
 
         # print('$$$$$$$$$$$$$$', p_r.probs.shape) [12, 32, 1024]
         occ_hat = p_r.probs.view(batch_size, *shape, z_resolution)
@@ -173,51 +197,21 @@ class Trainer(BaseTrainer):
         p_xy = data.get('points').to(device)
         occ_z = data.get('points.occ').to(device)
         inputs = data.get('inputs', torch.empty(p_xy.size(0), 0)).to(device)
-        # print('$$$$$$$$$$$$', p_xy.shape) [64, 256, 2]
-        if self.camera:
-            camera_args = common.get_camera_args(
-                data, 'points.loc', 'points.scale', device=self.device)
-            # # Transform GT data into camera coordinate system
-            world_mat, camera_mat = camera_args['Rt'], camera_args['K']
-            batch_size, D, T = p_xy.size()
-            z_coor = torch.linspace(0, 1, self.z_resolution+1)[:-1].unsqueeze(1).to(device)
-            z_coor = 1.1 * (z_coor - 0.5)
-            z_coor = z_coor.expand(batch_size, D, *z_coor.size())
-            xy_coor = p_xy.unsqueeze(2)
-            xy_coor = xy_coor.expand(-1, -1, 64, -1)
-            points = torch.cat([xy_coor,z_coor], dim=3)
-            points = points.view(batch_size, -1, 3)
-            points_transformed = common.transform_points(points, world_mat)
-            points_projection = common.project_to_camera(points_transformed, camera_mat)
-            # print('################', points_projection.shape)
 
+        print('*************', p_xy.shape)
+        print('&&&&&&&', occ_z.shape)
 
         kwargs = {}
-        # print('%%%%%%%%%%%%%%', inputs.shape) [64, 3, 224, 224]
 
-        c = self.model.encode_inputs(inputs)
-        # print('#############', c.shape) #[64, 256]
-        q_z = self.model.infer_z(p_xy, occ_z, c, **kwargs)
-        z = q_z.rsample()
+        c, c_local = self.model.encode_inputs(inputs)
+        # print('###########', c.shape) # [32, 32, 224, 224]
 
-        # KL-divergence
-        kl = dist.kl_divergence(q_z, self.model.p0_z).sum(dim=-1)
-        loss = kl.mean()
+        logits = self.model.decode(p_xy, c, c_local, **kwargs).logits
 
-
-        # print('########3333', p_xy.shape)  [64, 2048, 2]
-
-        if self.camera:
-            logits = self.model.decode(points_projection, z, c, **kwargs).logits
-        # General points
-        else:
-            logits = self.model.decode(p_xy, z, c, **kwargs).logits
-
-
-
+        # print('$$$$$$$$$$$$', logits.shape) #[64, 1024, 32]
 
         loss_i = F.binary_cross_entropy_with_logits(
             logits, occ_z, reduction='none')
-        loss = loss + loss_i.sum(-1).mean()
+        loss = loss_i.sum(-1).mean()
 
         return loss

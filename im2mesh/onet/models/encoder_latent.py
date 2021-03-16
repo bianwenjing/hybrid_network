@@ -46,6 +46,9 @@ class Encoder(nn.Module):
             self.actvn = lambda x: F.leaky_relu(x, 0.2)
             self.pool = torch.mean
 
+        for p in self.parameters():
+            p.requires_grad = False
+
     def forward(self, p, x, c=None, **kwargs):
         batch_size, T, D = p.size()
 
@@ -71,5 +74,7 @@ class Encoder(nn.Module):
 
         mean = self.fc_mean(net)
         logstd = self.fc_logstd(net)
+        # print('%%%%%%', p.shape, x.shape) torch.Size([64, 2048, 3]) torch.Size([64, 2048])
+        # print('############', mean.shape, logstd.shape) torch.Size([64, 128]) torch.Size([64, 128])
 
         return mean, logstd

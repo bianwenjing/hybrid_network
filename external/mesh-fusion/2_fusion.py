@@ -228,7 +228,7 @@ class Fusion:
         :return: depth maps
         :rtype: numpy.ndarray
         """
-
+        # os.environ["DISPLAY"] = ":99"
         depthmaps = []
         for i in range(len(Rs)):
             np_vertices = Rs[i].dot(mesh.vertices.astype(np.float64).T)
@@ -236,11 +236,11 @@ class Fusion:
 
             np_faces = mesh.faces.astype(np.float64)
             np_faces += 1
-
+            # print('11111111111111111111111111111111111')
             depthmap, mask, img = \
                 librender.render(np_vertices.copy(), np_faces.T.copy(),
                                  self.render_intrinsics, self.znf, self.image_size)
-
+            # print('222222222222222222222222222222222')
             # This is mainly result of experimenting.
             # The core idea is that the volume of the object is enlarged slightly
             # (by subtracting a constant from the depth map).

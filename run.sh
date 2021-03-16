@@ -1,0 +1,1 @@
+python train.py configs/img/onet_2d_depth_onemodel.yaml

@@ -132,7 +132,6 @@ class DecoderCBatchNorm(nn.Module):
             self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=6)
         ########################
 
-
         if not leaky:
             self.actvn = F.relu
         else:
@@ -161,6 +160,7 @@ class DecoderCBatchNorm(nn.Module):
             c = torch.cat([c, camera_position], dim=1)
 
         net = net.transpose(1, 2)
+        # print('))))))))))', net.shape, c.shape) # ([64, 256, 127]) torch.Size([64, 281]
         # batch_size, D, T = p.size()
         net = self.block0(net, c)
         net = self.block1(net, c)
@@ -179,7 +179,7 @@ class DecoderCBatchNorm(nn.Module):
 
         return out
 
-class DecoderCBatchNorm_pe(nn.Module):
+class DecoderCBatchNorm_or(nn.Module):
     ''' Decoder with conditional batch normalization (CBN) class.
 
     Args:

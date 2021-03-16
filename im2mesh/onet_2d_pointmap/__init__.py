@@ -1,4 +1,4 @@
-from im2mesh.onet_2d_shared import (
+from im2mesh.onet_2d_pointmap import (
     config, generation, training, models
 )
 

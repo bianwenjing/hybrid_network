@@ -74,7 +74,7 @@ class LocalDecoder(nn.Module):
             c_local = torch.unsqueeze(c_local, 1)
             c_local = c_local.view(batch_size, -1, self.z_resolution, self.c_dim_local)
             # print('$$$$$$$$$$$$4', c_local.shape) #[batch, num, 64, dim_local]
-            c_local = c_local.sum(-2)
+            # c_local = c_local.sum(-2)
 
 
         #############################################
@@ -98,6 +98,8 @@ class LocalDecoder(nn.Module):
             net = self.blocks[i](net)
 
         out = self.fc_out(self.actvn(net))
+        # add local feature
+        print('*****', out.shape)
         # print('$$$$$$$$$$$$', out.shape)  #(batch, subsample, z_resolution)
 
         return out

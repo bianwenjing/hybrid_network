@@ -3,7 +3,7 @@ import torch.distributions as dist
 from torch import nn
 import os
 from im2mesh.encoder import encoder_dict
-from im2mesh.onet_2d import models, training, generation
+from im2mesh.onet_2d_shared import models, training, generation
 from im2mesh import data
 from im2mesh import config
 
@@ -18,44 +18,33 @@ def get_model(cfg, device=None, dataset=None, **kwargs):
     '''
     decoder = cfg['model']['decoder']
     encoder = cfg['model']['encoder']
-    encoder_latent = cfg['model']['encoder_latent']
     dim = cfg['data']['dim']
-    z_dim = cfg['model']['z_dim']
-    c_dim = cfg['model']['c_dim']
+    c_dim_local = cfg['model']['c_dim_local']
+    c_dim_global = cfg['model']['c_dim_global']
     decoder_kwargs = cfg['model']['decoder_kwargs']
     encoder_kwargs = cfg['model']['encoder_kwargs']
-    encoder_latent_kwargs = cfg['model']['encoder_latent_kwargs']
     z_resolution = cfg['model']['z_resolution']
-    attention = cfg['model']['attention']
-    positional_encoding = cfg['model']['positional_encoding']
+    padding = cfg['data']['padding']
 
     decoder = models.decoder_dict[decoder](z_resolution=z_resolution,
-        dim=dim, z_dim=z_dim, c_dim=c_dim, attention=attention, positional_encoding=positional_encoding,
+        dim=dim, c_dim_local=c_dim_local,c_dim_global=c_dim_global, padding=padding,
         **decoder_kwargs
     )
 
-    if z_dim != 0:
-        encoder_latent = models.encoder_latent_dict[encoder_latent](
-            z_resolution=z_resolution,
-            dim=dim, z_dim=z_dim, c_dim=c_dim,
-            **encoder_latent_kwargs
-        )
-    else:
-        encoder_latent = None
 
     if encoder == 'idx':
-        encoder = nn.Embedding(len(dataset), c_dim)
+        encoder = nn.Embedding(len(dataset), c_dim_local)
     elif encoder is not None:
         encoder = encoder_dict[encoder](
-            c_dim=c_dim,
+            c_dim_local=c_dim_local, c_dim_global=c_dim_global,
             **encoder_kwargs
         )
     else:
         encoder = None
 
-    p0_z = get_prior_z(cfg, device)
+
     model = models.OccupancyNetwork(
-        decoder, encoder, encoder_latent, p0_z, device=device
+        decoder, encoder, device=device
     )
 
     return model
@@ -141,25 +130,24 @@ def get_data_fields(mode, cfg):
     # with_transforms = cfg['model']['use_camera']
     with_transforms = cfg['data']['with_transforms']
     z_resolution = cfg['model']['z_resolution']
+
     fields = {}
-    fields['points'] = data.RayField_cam(
-        cfg['data']['points_file'], points_transform,
+    fields['points'] = data.RayField2_cam(
+        cfg['data']['mesh_file'], points_transform,
         z_resolution=z_resolution,
         with_transforms=with_transforms,
-        unpackbits=cfg['data']['points_unpackbits'],
+        img_folder=cfg['data']['img_folder'],
     )
 
     if mode in ('val', 'test'):
-        points_iou_file = cfg['data']['points_iou_file']
         voxels_file = cfg['data']['voxels_file']
         voxels_file = None
-        if points_iou_file is not None:
-            fields['points_iou'] = data.RayField2(
-                points_iou_file,
-                z_resolution=z_resolution,
-                with_transforms=with_transforms,
-                unpackbits=cfg['data']['points_unpackbits'],
-            )
+        fields['points_iou'] = data.RayField2_cam(
+            cfg['data']['mesh_file'],
+            z_resolution=z_resolution,
+            with_transforms=with_transforms,
+            img_folder=cfg['data']['img_folder'],
+        )
         if voxels_file is not None:
             fields['voxels'] = data.VoxelsField(voxels_file)
 

@@ -7,14 +7,14 @@ data:
   points_subsample: 127
   dim: 2
   classes: ['03001627']
-  img_with_camera: true
-  with_transforms: true
+#  img_with_camera: true
+#  with_transforms: true
 model:
   encoder_latent: null
   decoder: cbatchnorm
 #  decoder: simple
   encoder: resnet18
-  c_dim: 25
+  c_dim: 256
   z_dim: 0
   z_resolution: 64
   attention: true
@@ -22,7 +22,7 @@ model:
 training:
 #  out_dir:  /home/wenjing/storage/out/onet
   out_dir:  out/img/onet_2d
-#  load_dir: /home/wenjing/Desktop/oc_encoder.pt
+  load_dir: /home/wenjing/oc_encoder.pt
   batch_size: 64
   model_selection_metric: iou
   model_selection_mode: maximize

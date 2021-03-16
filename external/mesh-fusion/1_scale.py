@@ -108,6 +108,7 @@ class Scale:
                 self.run_file(filepath)
         else:
             with Pool(self.options.n_proc) as p:
+                # print('###########', files)
                 p.map(self.run_file, files)
 
     def run_file(self, filepath):

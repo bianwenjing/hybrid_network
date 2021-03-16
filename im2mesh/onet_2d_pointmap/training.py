@@ -214,9 +214,7 @@ class Trainer(BaseTrainer):
             points = points.view(batch_size, -1, 3)
             points_transformed = common.transform_points(points, world_mat)
             points_projection = common.project_to_camera(points_transformed, camera_mat)
-            # print('@@@@@@@@@', points_projection[points_projection>1].shape, points_projection[points_projection<-1].shape,
-            #       points_projection[points_projection<1].shape)
-            # print('###########', points_projection.shape, torch.max(points_projection), torch.min(points_projection))
+
         else:
             points_projection = p_xy
 

@@ -52,14 +52,17 @@ if not os.path.exists(out_dir):
 shutil.copyfile(args.config, os.path.join(out_dir, 'config.yaml'))
 
 # Dataset
-train_dataset = config.get_dataset('train', cfg)
-val_dataset = config.get_dataset('val', cfg)
+if cfg['method'] == 'onet_2d_depth':
+    train_dataset = config.get_dataset_depth('train', cfg)
+    val_dataset = config.get_dataset_depth('val', cfg)
+else:
+    train_dataset = config.get_dataset('train', cfg)
+    val_dataset = config.get_dataset('val', cfg)
 
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=batch_size, num_workers=4, shuffle=True,
     collate_fn=data.collate_remove_none,
     worker_init_fn=data.worker_init_fn)
-
 val_loader = torch.utils.data.DataLoader(
     val_dataset, batch_size=10, num_workers=4, shuffle=False,
     collate_fn=data.collate_remove_none,
@@ -67,8 +70,12 @@ val_loader = torch.utils.data.DataLoader(
 
 
 # For visualizations
+# vis_loader = torch.utils.data.DataLoader(
+#     val_dataset, batch_size=12, shuffle=True,
+#     collate_fn=data.collate_remove_none,
+#     worker_init_fn=data.worker_init_fn)
 vis_loader = torch.utils.data.DataLoader(
-    val_dataset, batch_size=12, shuffle=True,
+    train_dataset, batch_size=12, shuffle=True,
     collate_fn=data.collate_remove_none,
     worker_init_fn=data.worker_init_fn)
 data_vis = next(iter(vis_loader))
@@ -78,7 +85,7 @@ model = config.get_model(cfg, device=device, dataset=train_dataset)
 
 # Intialize training
 npoints = 1000
-optimizer = optim.Adam(model.parameters(), lr=1e-4)
+optimizer = optim.Adam(model.parameters(), lr=cfg['training']['lr'])
 # optimizer = optim.SGD(model.parameters(), lr=1e-4, momentum=0.9)
 trainer = config.get_trainer(model, optimizer, cfg, device=device)
 
@@ -111,6 +118,9 @@ print('Current best validation metric (%s): %.8f'
 # TODO: reintroduce or remove scheduler?
 # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=4000,
 #                                       gamma=0.1, last_epoch=epoch_it)
+# scheduler = optim.lr_scheduler.MultiStepLR(
+#         optimizer, cfg['training']['scheduler_milestones'],
+#         gamma=0.1, last_epoch=epoch_it)
 logger = SummaryWriter(os.path.join(out_dir, 'logs'))
 
 # Shorthands
@@ -121,7 +131,7 @@ visualize_every = cfg['training']['visualize_every']
 
 # Print model
 nparameters = sum(p.numel() for p in model.parameters())
-print(model)
+# print(model)
 print('Total number of parameters: %d' % nparameters)
 
 while True:
@@ -176,3 +186,5 @@ while True:
             checkpoint_io.save('model.pt', epoch_it=epoch_it, it=it,
                                loss_val_best=metric_val_best)
             exit(3)
+    # Make scheduler step after full epoch
+    # scheduler.step()

@@ -1,7 +1,7 @@
 method: onet_2d
 data:
-#  path: /home/wenjing/storage/data/2d_ShapeNet
-  path: /home/wenjing/storage/data/ShapeNet
+  path: /home/wenjing/storage/data/2d_ShapeNet
+#  path: /home/wenjing/storage/data/ShapeNet
   img_folder: img_choy2016
   img_size: 224
   points_subsample: 256
@@ -17,13 +17,12 @@ model:
   c_dim: 256
   z_dim: 0
   z_resolution: 64
-  attention: true
+  attention: false
   positional_encoding: false
 training:
 #  out_dir:  /home/wenjing/storage/data2/onet_2d_cam_pe_normal
-  out_dir:  /home/wenjing/storage/data2/onet_2d_attention
+  out_dir:  /home/wenjing/storage/data2/onet_2d_chair
   load_dir: /home/wenjing/storage/oc_encoder.pt
-#  out_dir:  out/img/onet_2d
   batch_size: 64
   model_selection_metric: iou
   model_selection_mode: maximize

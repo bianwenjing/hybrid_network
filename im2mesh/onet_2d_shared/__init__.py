@@ -1,4 +1,4 @@
-from im2mesh.onet_2d_2code import (
+from im2mesh.onet_2d_shared import (
     config, generation, training, models
 )
 

@@ -1,7 +1,7 @@
 method: shared_2code
 data:
-#  path: /home/wenjing/storage/data/2d_ShapeNet
-  path: /home/wenjing/storage/data/ShapeNet
+  path: /home/wenjing/storage/data/2d_ShapeNet
+#  path: /home/wenjing/storage/data/ShapeNet
   img_folder: img_choy2016
   img_size: 224
   points_subsample: 256
@@ -12,27 +12,28 @@ data:
   with_transforms: true
 model:
   encoder_latent: null
-  decoder: simple_local
+#  decoder: simple_local
+  decoder: cbatchnorm_local
   encoder: resnet18_shared
 #  c_dim_local: 0
   c_dim_global: 256
-  c_dim_local: 256
+  c_dim_local: 32
   z_dim: 0
   z_resolution: 64
   normalize: true
 training:
-  out_dir:  /home/wenjing/storage/shared/res18_freeze
-#  load_dir: /home/wenjing/storage/oc_encoder.pt
+  out_dir:  /home/wenjing/storage/shared/res18_freeze_lastlocal_cbatch_gridsample2_nofreeze
+  load_dir: /home/wenjing/storage/oc_encoder.pt
   batch_size: 64
   model_selection_metric: iou
   model_selection_mode: maximize
   visualize_every: 20000
   validate_every: 20000
 test:
-  threshold: 0.2
+  threshold: 0.3
   eval_mesh: true
   eval_pointcloud: false
-  model_file: /home/wenjing/storage/shared/res18_freeze/model_best.pt
+  model_file: /home/wenjing/storage/shared/res18_freeze_lastlocal_cbatch_gridsample2_nofreeze/model_best.pt
 generation:
   batch_size: 100000
   refine: false

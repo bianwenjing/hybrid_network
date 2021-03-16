@@ -130,6 +130,8 @@ def get_data_fields(mode, cfg):
     '''
     points_transform = data.SubsamplePoints(cfg['data']['points_subsample'])
     with_transforms = cfg['model']['use_camera']
+    with_transforms = True
+
 
     fields = {}
     fields['points'] = data.PointsField(

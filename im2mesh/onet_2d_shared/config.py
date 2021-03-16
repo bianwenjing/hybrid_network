@@ -3,7 +3,7 @@ import torch.distributions as dist
 from torch import nn
 import os
 from im2mesh.encoder import encoder_dict
-from im2mesh.onet_2d_2code import models, training, generation
+from im2mesh.onet_2d_shared import models, training, generation
 from im2mesh import data
 from im2mesh import config
 
@@ -17,55 +17,35 @@ def get_model(cfg, device=None, dataset=None, **kwargs):
         dataset (dataset): dataset
     '''
     decoder = cfg['model']['decoder']
-    encoder_local = cfg['model']['encoder_local']
-    encoder_global = cfg['model']['encoder_global']
-    # encoder_latent = cfg['model']['encoder_latent']
+    encoder = cfg['model']['encoder']
     dim = cfg['data']['dim']
-    # z_dim = cfg['model']['z_dim']
     c_dim_local = cfg['model']['c_dim_local']
     c_dim_global = cfg['model']['c_dim_global']
     decoder_kwargs = cfg['model']['decoder_kwargs']
     encoder_kwargs = cfg['model']['encoder_kwargs']
-    # encoder_latent_kwargs = cfg['model']['encoder_latent_kwargs']
     z_resolution = cfg['model']['z_resolution']
-    padding = cfg['data']['padding']
+    # padding = cfg['data']['padding']
+    normalize_global_local = cfg['model']['normalize']
 
     decoder = models.decoder_dict[decoder](z_resolution=z_resolution,
-        dim=dim, c_dim_local=c_dim_local,c_dim_global=c_dim_global, padding=padding,
+        dim=dim, c_dim_local=c_dim_local,c_dim_global=c_dim_global, normalize=normalize_global_local,
         **decoder_kwargs
     )
 
-    # if z_dim != 0:
-    #     encoder_latent = models.encoder_latent_dict[encoder_latent](
-    #         z_resolution=z_resolution,
-    #         dim=dim, z_dim=z_dim, c_dim=c_dim,
-    #         **encoder_latent_kwargs
-    #     )
-    # else:
-    #     encoder_latent = None
 
-    if encoder_local == 'idx':
-        encoder_local = nn.Embedding(len(dataset), c_dim_local)
-    elif encoder_local is not None:
-        encoder_local = encoder_dict[encoder_local](
-            c_dim=c_dim_local,
+    if encoder == 'idx':
+        encoder = nn.Embedding(len(dataset), c_dim_local)
+    elif encoder is not None:
+        encoder = encoder_dict[encoder](
+            c_dim_local=c_dim_local, c_dim_global=c_dim_global,
             **encoder_kwargs
         )
     else:
-        encoder_local = None
+        encoder = None
 
-    if encoder_global == 'idx':
-        encoder_global = nn.Embedding(len(dataset), c_dim_global)
-    elif encoder_global is not None:
-        encoder_global = encoder_dict[encoder_global](
-            c_dim=c_dim_global,
-            **encoder_kwargs
-        )
-    else:
-        encoder_global = None
 
     model = models.OccupancyNetwork(
-        decoder, encoder_local, encoder_global, device=device
+        decoder, encoder, device=device
     )
 
     return model
@@ -108,6 +88,7 @@ def get_generator(model, cfg, device, **kwargs):
         device (device): pytorch device
     '''
     preprocessor = config.get_preprocessor(cfg, device=device)
+    camera = cfg['data']['img_with_camera']
 
     generator = generation.Generator3D(
         model,
@@ -120,6 +101,7 @@ def get_generator(model, cfg, device, **kwargs):
         refinement_step=cfg['generation']['refinement_step'],
         simplify_nfaces=cfg['generation']['simplify_nfaces'],
         preprocessor=preprocessor,
+        camera=camera,
     )
     return generator
 

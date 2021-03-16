@@ -37,7 +37,11 @@ if vis_n_outputs is None:
     vis_n_outputs = -1
 
 # Dataset
-dataset = config.get_dataset('test', cfg, return_idx=True)
+# dataset = config.get_dataset('test', cfg, return_idx=True)
+if cfg['method'] == 'onet_2d_depth':
+    dataset = config.get_dataset_depth('test', cfg, return_idx=True)
+else:
+    dataset = config.get_dataset('test', cfg, return_idx=True)
 
 # Model
 model = config.get_model(cfg, device=device, dataset=dataset)

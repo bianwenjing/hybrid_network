@@ -1,45 +1,48 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from im2mesh.layers import (
-    ResnetBlockFC, CResnetBlockConv1d,
-    CBatchNorm1d, CBatchNorm1d_legacy,
-    ResnetBlockConv1d
-)
-from im2mesh.common import map2local
+from im2mesh.layers import ResnetBlockFC
+from im2mesh.common import normalize_coordinate # normalize_3d_coordinate
 
-class Decoder(nn.Module):
-    ''' Decoder class.
 
-    It does not perform any form of normalization.
+class LocalDecoder(nn.Module):
+    ''' Decoder.
+        Instead of conditioning on global features, on plane/volume local features.
 
     Args:
         dim (int): input dimension
-        z_dim (int): dimension of latent code z
         c_dim (int): dimension of latent conditioned code c
         hidden_size (int): hidden size of Decoder network
+        n_blocks (int): number of blocks ResNetBlockFC layers
         leaky (bool): whether to use leaky ReLUs
+        sample_mode (str): sampling feature strategy, bilinear|nearest
+        padding (float): conventional padding paramter of ONet for unit cube, so [-0.5, 0.5] -> [-0.55, 0.55]
     '''
 
-    def __init__(self, z_resolution, dim=2, z_dim=128, c_dim=128,
-                 hidden_size=128, leaky=False, attention=False, positional_encoding=False):
+    def __init__(self, dim=2, c_dim_local=128, c_dim_global=128, z_resolution = 32,
+                 hidden_size=256, n_blocks=5, leaky=False, sample_mode='bilinear', padding=0.1):
         super().__init__()
-        self.z_dim = z_dim
+        ################################3
+        self.fc_global = nn.Linear(256, c_dim_global)
+        ####################################
+        self.c_dim_local = c_dim_local
+        self.c_dim_global = c_dim_global
+        c_dim = c_dim_local + c_dim_global
         self.c_dim = c_dim
+        self.n_blocks = n_blocks
+        self.z_resolution = z_resolution
 
-        # Submodules
+        if c_dim != 0:
+            self.fc_c = nn.ModuleList([
+                nn.Linear(c_dim, hidden_size) for i in range(n_blocks)
+            ])
+
         self.fc_p = nn.Linear(dim, hidden_size)
 
-        if not z_dim == 0:
-            self.fc_z = nn.Linear(z_dim, hidden_size)
 
-        if not c_dim == 0:
-            self.fc_c = nn.Linear(c_dim, hidden_size)
-
-        self.block0 = ResnetBlockFC(hidden_size)
-        self.block1 = ResnetBlockFC(hidden_size)
-        self.block2 = ResnetBlockFC(hidden_size)
-        self.block3 = ResnetBlockFC(hidden_size)
-        self.block4 = ResnetBlockFC(hidden_size)
+        self.blocks = nn.ModuleList([
+            ResnetBlockFC(hidden_size) for i in range(n_blocks)
+        ])
 
         self.fc_out = nn.Linear(hidden_size, z_resolution)
 
@@ -48,351 +51,321 @@ class Decoder(nn.Module):
         else:
             self.actvn = lambda x: F.leaky_relu(x, 0.2)
 
-    def forward(self, p, z, c=None, **kwargs):
+        self.sample_mode = sample_mode
+        self.padding = padding
+
+    def sample_plane_feature(self, p, c):
+        xy = normalize_coordinate(p.clone(), padding=self.padding)  # normalize to the range of (0, 1)
+        xy = xy[:, :, None].float()
+        vgrid = 2.0 * xy - 1.0  # normalize to (-1, 1)
+        c = F.grid_sample(c, vgrid, padding_mode='border', align_corners=True, mode=self.sample_mode).squeeze(-1)
+        return c
+
+
+    def forward(self,p, c_global, c_local, **kwargs):
         batch_size, T, D = p.size()
-
-        net = self.fc_p(p)
-
-        if self.z_dim != 0:
-            net_z = self.fc_z(z).unsqueeze(1)
-            net = net + net_z
+        # print('%%%%%%%%%%%%%%', p.shape)  #[32,8192,2]
+        # print('$$$$$$$$$$$$$$', c_local.shape, c_global.shape)  #(32, 32, 112, 112]) torch.Size([32, 256]
 
         if self.c_dim != 0:
-            net_c = self.fc_c(c).unsqueeze(1)
-            net = net + net_c
-        net = self.block0(net)
-        net = self.block1(net)
-        net = self.block2(net)
-        net = self.block3(net)
-        net = self.block4(net)
+            c_local = self.sample_plane_feature(p, c_local)
+            c_local = c_local.transpose(1, 2)
+            # print('##############', c_local.shape) #[32, 8192, 32]
+            c_local = torch.unsqueeze(c_local, 1)
+            c_local = c_local.view(batch_size, -1, self.z_resolution, self.c_dim_local)
+            # print('$$$$$$$$$$$$4', c_local.shape) #[batch, num, 64, dim_local]
+            # p_project = p_project.view(batch_size, -1, 64, 2)
+            # print('#######', p_project.shape, p_project[0][0])
+            # print('@@@@@@@@', c_local.shape)
+
+        c_global = torch.unsqueeze(c_global, 1)
+        c_global = c_global.expand(batch_size, T, self.c_dim_global)
+
+        # c_local = F.normalize(c_local, dim=2)
+        # c_global = F.normalize(c_global, dim=2)
+        c = torch.cat((c_global, c_local), 2)
+        p = p.float()
+        net = self.fc_p(p)
+
+        for i in range(self.n_blocks):
+            if self.c_dim != 0:
+                net = net + self.fc_c[i](c)
+
+            net = self.blocks[i](net)
 
         out = self.fc_out(self.actvn(net))
-        # out = out.squeeze(-1)
+        # print('$$$$$$$$$$$$', out.shape)  #(batch, subsample, z_resolution)
 
         return out
 
-
-class DecoderCBatchNorm(nn.Module):
-    ''' Decoder with conditional batch normalization (CBN) class.
+class LocalDecoder_CBatchNorm(nn.Module):
+    ''' Decoder.
+        Instead of conditioning on global features, on plane/volume local features.
 
     Args:
         dim (int): input dimension
-        z_dim (int): dimension of latent code z
         c_dim (int): dimension of latent conditioned code c
         hidden_size (int): hidden size of Decoder network
+        n_blocks (int): number of blocks ResNetBlockFC layers
         leaky (bool): whether to use leaky ReLUs
-        legacy (bool): whether to use the legacy structure
+        sample_mode (str): sampling feature strategy, bilinear|nearest
+        padding (float): conventional padding paramter of ONet for unit cube, so [-0.5, 0.5] -> [-0.55, 0.55]
     '''
 
-    def __init__(self, z_resolution, dim=2, z_dim=128, c_dim=128,
-                 hidden_size=256, leaky=False, legacy=False, attention=False, positional_encoding=False):
+    def __init__(self, dim=2, c_dim_local=128, c_dim_global=128, z_resolution = 32,
+                 hidden_size=256, n_blocks=5, leaky=False, sample_mode='bilinear', padding=0.1):
         super().__init__()
-        self.z_dim = z_dim
-        if not z_dim == 0:
-            self.fc_z = nn.Linear(z_dim, hidden_size)
+        self.c_dim_local = c_dim_local
+        self.c_dim_global = c_dim_global
+        c_dim = c_dim_local + c_dim_global
+        self.c_dim = c_dim
+        self.n_blocks = n_blocks
 
-        ########positional encoding###########
-        self.postional_encoding = positional_encoding
+        if c_dim != 0:
+            self.fc_c = nn.ModuleList([
+                nn.Linear(c_dim, hidden_size) for i in range(n_blocks)
+            ])
 
+        self.fc_p = nn.Linear(dim, hidden_size)
 
-        if positional_encoding:
-            unit_size = 0.1
-            self.map2local = map2local(unit_size, pos_encoding='sin_cos')
-            self.fc_p = nn.Linear(40, hidden_size)
-        else:
-            self.fc_p = nn.Linear(dim, hidden_size)
-            # self.fc_p = nn.Conv1d(dim, hidden_size, 1)
-        self.block0 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
-        self.block1 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
-        self.block2 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
-        self.block3 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
-        self.block4 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
+        self.blocks = nn.ModuleList([
+            ResnetBlockFC(hidden_size) for i in range(n_blocks)
+        ])
 
-        if not legacy:
-            self.bn = CBatchNorm1d(c_dim, hidden_size)
-        else:
-            self.bn = CBatchNorm1d_legacy(c_dim, hidden_size)
-
-        self.fc_out = nn.Conv1d(hidden_size, z_resolution, 1)
-        # self.fc_out = nn.Linear(hidden_size, z_resolution)
-
-        ###########attention
-        self.attention = attention
-        if attention:
-            encoder_layer = nn.TransformerEncoderLayer(d_model=c_dim, nhead=8)
-            self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=6)
-        ########################
+        self.fc_out = nn.Linear(hidden_size, z_resolution)
 
         if not leaky:
             self.actvn = F.relu
         else:
             self.actvn = lambda x: F.leaky_relu(x, 0.2)
 
-    def forward(self, p, z, c, **kwargs):
-        if self.postional_encoding:
-            p = p.float()
+        self.sample_mode = sample_mode
+        self.padding = padding
+
+    def sample_plane_feature(self, p, c):
+        xy = normalize_coordinate(p.clone(), padding=self.padding)  # normalize to the range of (0, 1)
+        xy = xy[:, :, None].float()
+        vgrid = 2.0 * xy - 1.0  # normalize to (-1, 1)
+        c = F.grid_sample(c, vgrid, padding_mode='border', align_corners=True, mode=self.sample_mode).squeeze(-1)
+        return c
+
+
+    def forward(self, p, c_global, c_local, **kwargs):
+        batch_size, T, D = p.size()
+
+        if self.c_dim != 0:
+            c_local = self.sample_plane_feature(p, c_local)
+            c_local = c_local.transpose(1, 2)
+
+        c_global = torch.unsqueeze(c_global, 1)
+        c_global = c_global.expand(batch_size, T, self.c_dim_global)
+
+        c = torch.cat((c_global, c_local), 2)
+        # print('############', c.shape)
+        p = p.float()
+        net = self.fc_p(p)
+
+        # for i in range(self.n_blocks):
+        #     if self.c_dim != 0:
+        #         net = net + self.fc_c[i](c)
+        #
+        #     net = self.blocks[i](net)
+        net = self.block0(net, c)
+        net = self.block1(net, c)
+        net = self.block2(net, c)
+        net = self.block3(net, c)
+        net = self.block4(net, c)
+
+        # out = self.fc_out(self.actvn(net))
+        out = self.fc_out(self.actvn(self.bn(net, c)))
+        # print('$$$$$$$$$$$$', out.shape)  #(batch, subsample, z_resolution)
+
+        return out
+
+
+class PatchLocalDecoder(nn.Module):
+    ''' Decoder adapted for crop training.
+        Instead of conditioning on global features, on plane/volume local features.
+
+    Args:
+        dim (int): input dimension
+        c_dim (int): dimension of latent conditioned code c
+        hidden_size (int): hidden size of Decoder network
+        n_blocks (int): number of blocks ResNetBlockFC layers
+        leaky (bool): whether to use leaky ReLUs
+        sample_mode (str): sampling feature strategy, bilinear|nearest
+        local_coord (bool): whether to use local coordinate
+        unit_size (float): defined voxel unit size for local system
+        pos_encoding (str): method for the positional encoding, linear|sin_cos
+        padding (float): conventional padding paramter of ONet for unit cube, so [-0.5, 0.5] -> [-0.55, 0.55]
+
+    '''
+
+    def __init__(self, dim=3, c_dim=128,
+                 hidden_size=256, leaky=False, n_blocks=5, sample_mode='bilinear', local_coord=False,
+                 pos_encoding='linear', unit_size=0.1, padding=0.1):
+        super().__init__()
+        self.c_dim = c_dim
+        self.n_blocks = n_blocks
+
+        if c_dim != 0:
+            self.fc_c = nn.ModuleList([
+                nn.Linear(c_dim, hidden_size) for i in range(n_blocks)
+            ])
+
+        # self.fc_p = nn.Linear(dim, hidden_size)
+        self.fc_out = nn.Linear(hidden_size, 1)
+        self.blocks = nn.ModuleList([
+            ResnetBlockFC(hidden_size) for i in range(n_blocks)
+        ])
+
+        if not leaky:
+            self.actvn = F.relu
+        else:
+            self.actvn = lambda x: F.leaky_relu(x, 0.2)
+
+        self.sample_mode = sample_mode
+
+        if local_coord:
+            self.map2local = map2local(unit_size, pos_encoding=pos_encoding)
+        else:
+            self.map2local = None
+
+        if pos_encoding == 'sin_cos':
+            self.fc_p = nn.Linear(60, hidden_size)
+        else:
+            self.fc_p = nn.Linear(dim, hidden_size)
+
+    def sample_feature(self, xy, c, fea_type='2d'):
+        if fea_type == '2d':
+            xy = xy[:, :, None].float()
+            vgrid = 2.0 * xy - 1.0  # normalize to (-1, 1)
+            c = F.grid_sample(c, vgrid, padding_mode='border', align_corners=True, mode=self.sample_mode).squeeze(-1)
+        else:
+            xy = xy[:, :, None, None].float()
+            vgrid = 2.0 * xy - 1.0  # normalize to (-1, 1)
+            c = F.grid_sample(c, vgrid, padding_mode='border', align_corners=True, mode=self.sample_mode).squeeze(
+                -1).squeeze(-1)
+        return c
+
+    def forward(self, p, c_plane, **kwargs):
+        p_n = p['p_n']
+        p = p['p']
+
+        if self.c_dim != 0:
+            plane_type = list(c_plane.keys())
+            c = 0
+            if 'grid' in plane_type:
+                c += self.sample_feature(p_n['grid'], c_plane['grid'], fea_type='3d')
+            if 'xz' in plane_type:
+                c += self.sample_feature(p_n['xz'], c_plane['xz'])
+            if 'xy' in plane_type:
+                c += self.sample_feature(p_n['xy'], c_plane['xy'])
+            if 'yz' in plane_type:
+                c += self.sample_feature(p_n['yz'], c_plane['yz'])
+            c = c.transpose(1, 2)
+
+        p = p.float()
+        if self.map2local:
             p = self.map2local(p)
 
         net = self.fc_p(p)
+        for i in range(self.n_blocks):
+            if self.c_dim != 0:
+                net = net + self.fc_c[i](c)
+            net = self.blocks[i](net)
 
-        if self.z_dim != 0:
-            net_z = self.fc_z(z).unsqueeze(2)
-            net = net + net_z
-
-        #attention
-        if self.attention:
-            net = self.transformer_encoder(net)
-        net = net.transpose(1, 2)
-        # batch_size, D, T = p.size()
-        net = self.block0(net, c)
-        net = self.block1(net, c)
-        net = self.block2(net, c)
-        net = self.block3(net, c)
-        net = self.block4(net, c)
-
-
-        # print('#############', net.shape, self.actvn(self.bn(net, c)).shape) (64, 256, 1024)
-        out = self.fc_out(self.actvn(self.bn(net, c)))
-        out = out.transpose(1,2)
+        out = self.fc_out(self.actvn(net))
+        out = out.squeeze(-1)
 
         return out
 
-class DecoderCBatchNorm_pe(nn.Module):
-    ''' Decoder with conditional batch normalization (CBN) class.
+
+class LocalPointDecoder(nn.Module):
+    ''' Decoder for PointConv Baseline.
 
     Args:
         dim (int): input dimension
-        z_dim (int): dimension of latent code z
         c_dim (int): dimension of latent conditioned code c
         hidden_size (int): hidden size of Decoder network
         leaky (bool): whether to use leaky ReLUs
-        legacy (bool): whether to use the legacy structure
+        n_blocks (int): number of blocks ResNetBlockFC layers
+        sample_mode (str): sampling mode  for points
     '''
 
-    def __init__(self, z_resolution, dim=2, z_dim=128, c_dim=128,
-                 hidden_size=256, leaky=False, legacy=False, attention=False, positional_encoding=False):
+    def __init__(self, dim=3, c_dim=128,
+                 hidden_size=256, leaky=False, n_blocks=5, sample_mode='gaussian', **kwargs):
         super().__init__()
-        self.z_dim = z_dim
-        if not z_dim == 0:
-            self.fc_z = nn.Linear(z_dim, hidden_size)
+        self.c_dim = c_dim
+        self.n_blocks = n_blocks
 
-        self.fc_p = nn.Conv1d(dim, hidden_size, 1)
-        # self.fc_p = nn.Linear(60, hidden_size)
-        self.block0 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
-        self.block1 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
-        self.block2 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
-        self.block3 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
-        self.block4 = CResnetBlockConv1d(c_dim, hidden_size, legacy=legacy)
+        if c_dim != 0:
+            self.fc_c = nn.ModuleList([
+                nn.Linear(c_dim, hidden_size) for i in range(n_blocks)
+            ])
 
+        self.fc_p = nn.Linear(dim, hidden_size)
 
-        if not legacy:
-            self.bn = CBatchNorm1d(c_dim, hidden_size)
-        else:
-            self.bn = CBatchNorm1d_legacy(c_dim, hidden_size)
-
-        self.fc_out = nn.Conv1d(hidden_size, z_resolution, 1)
-        # self.fc_out = nn.Linear(hidden_size, z_resolution)
-
-        if not leaky:
-            self.actvn = F.relu
-        else:
-            self.actvn = lambda x: F.leaky_relu(x, 0.2)
-
-    def forward(self, p, z, c, **kwargs):
-        p = p.transpose(1, 2)
-        batch_size, D, T = p.size()
-
-        net = self.fc_p(p)
-
-        if self.z_dim != 0:
-            net_z = self.fc_z(z).unsqueeze(2)
-            net = net + net_z
-
-        net = self.block0(net, c)
-        net = self.block1(net, c)
-        net = self.block2(net, c)
-        net = self.block3(net, c)
-        net = self.block4(net, c)
-
-
-        # print('#############', net.shape, self.actvn(self.bn(net, c)).shape) (64, 256, 1024)
-        out = self.fc_out(self.actvn(self.bn(net, c)))
-        out = out.transpose(1,2)
-
-        return out
-
-class DecoderCBatchNorm2(nn.Module):
-    ''' Decoder with CBN class 2.
-
-    It differs from the previous one in that the number of blocks can be
-    chosen.
-
-    Args:
-        dim (int): input dimension
-        z_dim (int): dimension of latent code z
-        c_dim (int): dimension of latent conditioned code c
-        hidden_size (int): hidden size of Decoder network
-        leaky (bool): whether to use leaky ReLUs
-        n_blocks (int): number of ResNet blocks
-    '''
-
-    def __init__(self, dim=3, z_dim=0, c_dim=128,
-                 hidden_size=256, n_blocks=5):
-        super().__init__()
-        self.z_dim = z_dim
-        if z_dim != 0:
-            self.fc_z = nn.Linear(z_dim, c_dim)
-
-        self.conv_p = nn.Conv1d(dim, hidden_size, 1)
         self.blocks = nn.ModuleList([
-            CResnetBlockConv1d(c_dim, hidden_size) for i in range(n_blocks)
+            ResnetBlockFC(hidden_size) for i in range(n_blocks)
         ])
 
-        self.bn = CBatchNorm1d(c_dim, hidden_size)
-        self.conv_out = nn.Conv1d(hidden_size, 1, 1)
-        self.actvn = nn.ReLU()
-
-    def forward(self, p, z, c, **kwargs):
-        p = p.transpose(1, 2)
-        batch_size, D, T = p.size()
-        net = self.conv_p(p)
-
-        if self.z_dim != 0:
-            c = c + self.fc_z(z)
-
-        for block in self.blocks:
-            net = block(net, c)
-
-        out = self.conv_out(self.actvn(self.bn(net, c)))
-        out = out.squeeze(1)
-
-        return out
-
-
-class DecoderCBatchNormNoResnet(nn.Module):
-    ''' Decoder CBN with no ResNet blocks class.
-
-    Args:
-        dim (int): input dimension
-        z_dim (int): dimension of latent code z
-        c_dim (int): dimension of latent conditioned code c
-        hidden_size (int): hidden size of Decoder network
-        leaky (bool): whether to use leaky ReLUs
-    '''
-
-    def __init__(self, dim=3, z_dim=128, c_dim=128,
-                 hidden_size=256, leaky=False):
-        super().__init__()
-        self.z_dim = z_dim
-        if not z_dim == 0:
-            self.fc_z = nn.Linear(z_dim, hidden_size)
-
-        self.fc_p = nn.Conv1d(dim, hidden_size, 1)
-        self.fc_0 = nn.Conv1d(hidden_size, hidden_size, 1)
-        self.fc_1 = nn.Conv1d(hidden_size, hidden_size, 1)
-        self.fc_2 = nn.Conv1d(hidden_size, hidden_size, 1)
-        self.fc_3 = nn.Conv1d(hidden_size, hidden_size, 1)
-        self.fc_4 = nn.Conv1d(hidden_size, hidden_size, 1)
-
-        self.bn_0 = CBatchNorm1d(c_dim, hidden_size)
-        self.bn_1 = CBatchNorm1d(c_dim, hidden_size)
-        self.bn_2 = CBatchNorm1d(c_dim, hidden_size)
-        self.bn_3 = CBatchNorm1d(c_dim, hidden_size)
-        self.bn_4 = CBatchNorm1d(c_dim, hidden_size)
-        self.bn_5 = CBatchNorm1d(c_dim, hidden_size)
-
-        self.fc_out = nn.Conv1d(hidden_size, 1, 1)
+        self.fc_out = nn.Linear(hidden_size, 1)
 
         if not leaky:
             self.actvn = F.relu
         else:
             self.actvn = lambda x: F.leaky_relu(x, 0.2)
 
-    def forward(self, p, z, c, **kwargs):
-        p = p.transpose(1, 2)
-        batch_size, D, T = p.size()
-        net = self.fc_p(p)
+        self.sample_mode = sample_mode
+        if sample_mode == 'gaussian':
+            self.var = kwargs['gaussian_val'] ** 2
 
-        if self.z_dim != 0:
-            net_z = self.fc_z(z).unsqueeze(2)
-            net = net + net_z
-
-        net = self.actvn(self.bn_0(net, c))
-        net = self.fc_0(net)
-        net = self.actvn(self.bn_1(net, c))
-        net = self.fc_1(net)
-        net = self.actvn(self.bn_2(net, c))
-        net = self.fc_2(net)
-        net = self.actvn(self.bn_3(net, c))
-        net = self.fc_3(net)
-        net = self.actvn(self.bn_4(net, c))
-        net = self.fc_4(net)
-        net = self.actvn(self.bn_5(net, c))
-        out = self.fc_out(net)
-        out = out.squeeze(1)
-
-        return out
-
-
-class DecoderBatchNorm(nn.Module):
-    ''' Decoder with batch normalization class.
-
-    Args:
-        dim (int): input dimension
-        z_dim (int): dimension of latent code z
-        c_dim (int): dimension of latent conditioned code c
-        hidden_size (int): hidden size of Decoder network
-        leaky (bool): whether to use leaky ReLUs
-    '''
-
-    def __init__(self, dim=3, z_dim=128, c_dim=128,
-                 hidden_size=256, leaky=False):
-        super().__init__()
-        self.z_dim = z_dim
-        self.c_dim = c_dim
-
-        # Submodules
-        if not z_dim == 0:
-            self.fc_z = nn.Linear(z_dim, hidden_size)
-
-        if self.c_dim != 0:
-            self.fc_c = nn.Linear(c_dim, hidden_size)
-        self.fc_p = nn.Conv1d(dim, hidden_size, 1)
-        self.block0 = ResnetBlockConv1d(hidden_size)
-        self.block1 = ResnetBlockConv1d(hidden_size)
-        self.block2 = ResnetBlockConv1d(hidden_size)
-        self.block3 = ResnetBlockConv1d(hidden_size)
-        self.block4 = ResnetBlockConv1d(hidden_size)
-
-        self.bn = nn.BatchNorm1d(hidden_size)
-
-        self.fc_out = nn.Conv1d(hidden_size, 1, 1)
-
-        if not leaky:
-            self.actvn = F.relu
+    def sample_point_feature(self, q, p, fea):
+        # q: B x M x 3
+        # p: B x N x 3
+        # fea: B x N x c_dim
+        # p, fea = c
+        if self.sample_mode == 'gaussian':
+            # distance betweeen each query point to the point cloud
+            dist = -((p.unsqueeze(1).expand(-1, q.size(1), -1, -1) - q.unsqueeze(2)).norm(dim=3) + 10e-6) ** 2
+            weight = (dist / self.var).exp()  # Guassian kernel
         else:
-            self.actvn = lambda x: F.leaky_relu(x, 0.2)
+            weight = 1 / ((p.unsqueeze(1).expand(-1, q.size(1), -1, -1) - q.unsqueeze(2)).norm(dim=3) + 10e-6)
 
-    def forward(self, p, z, c, **kwargs):
-        p = p.transpose(1, 2)
-        batch_size, D, T = p.size()
+        # weight normalization
+        weight = weight / weight.sum(dim=2).unsqueeze(-1)
+
+        c_out = weight @ fea  # B x M x c_dim
+
+        return c_out
+
+    def forward(self, p, c, **kwargs):
+        n_points = p.shape[1]
+
+        if n_points >= 30000:
+            pp, fea = c
+            c_list = []
+            for p_split in torch.split(p, 10000, dim=1):
+                if self.c_dim != 0:
+                    c_list.append(self.sample_point_feature(p_split, pp, fea))
+            c = torch.cat(c_list, dim=1)
+
+        else:
+            if self.c_dim != 0:
+                pp, fea = c
+                c = self.sample_point_feature(p, pp, fea)
+
+        p = p.float()
         net = self.fc_p(p)
 
-        if self.z_dim != 0:
-            net_z = self.fc_z(z).unsqueeze(2)
-            net = net + net_z
+        for i in range(self.n_blocks):
+            if self.c_dim != 0:
+                net = net + self.fc_c[i](c)
 
-        if self.c_dim != 0:
-            net_c = self.fc_c(c).unsqueeze(2)
-            net = net + net_c
+            net = self.blocks[i](net)
 
-        net = self.block0(net)
-        net = self.block1(net)
-        net = self.block2(net)
-        net = self.block3(net)
-        net = self.block4(net)
-
-        out = self.fc_out(self.actvn(self.bn(net)))
-        out = out.squeeze(1)
+        out = self.fc_out(self.actvn(net))
+        out = out.squeeze(-1)
 
         return out

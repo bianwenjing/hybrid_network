@@ -73,13 +73,15 @@ def get_trainer(model, optimizer, cfg, device, **kwargs):
     vis_dir = os.path.join(out_dir, 'vis')
     input_type = cfg['data']['input_type']
     z_resolution = cfg['model']['z_resolution']
+    camera = cfg['data']['img_with_camera']
 
     trainer = training.Trainer(
         model, optimizer,
         device=device, input_type=input_type,
         vis_dir=vis_dir, threshold=threshold,
         eval_sample=cfg['training']['eval_sample'],
-        z_resolution=z_resolution
+        z_resolution=z_resolution,
+        camera=camera,
     )
 
     return trainer

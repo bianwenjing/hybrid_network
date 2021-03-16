@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch import distributions as dist
-from im2mesh.onet_2d_2code.models import decoder
+from im2mesh.onet_2d_shared.models import decoder
 
 # # Encoder latent dictionary
 # encoder_latent_dict = {
@@ -20,6 +20,7 @@ from im2mesh.onet_2d_2code.models import decoder
 # Decoder dictionary
 decoder_dict = {
     'simple_local': decoder.LocalDecoder,
+    'cbatchnorm_local': decoder.LocalDecoder_CBatchNorm,
     'simple_local_crop': decoder.PatchLocalDecoder,
     'simple_local_point': decoder.LocalPointDecoder
 }
@@ -37,20 +38,15 @@ class OccupancyNetwork(nn.Module):
         device (device): torch device
     '''
 
-    def __init__(self, decoder, encoder_local=None, encoder_global=None,
+    def __init__(self, decoder, encoder=None,
                  device=None):
         super().__init__()
 
         self.decoder = decoder.to(device)
 
 
-        if encoder_local is not None:
-            self.encoder_local = encoder_local.to(device)
-        else:
-            self.encoder_local = None
-
-        if encoder_global is not None:
-            self.encoder = encoder_global.to(device)
+        if encoder is not None:
+            self.encoder = encoder.to(device)
         else:
             self.encoder = None
 
@@ -78,17 +74,10 @@ class OccupancyNetwork(nn.Module):
         '''
 
         if self.encoder is not None:
-            c = self.encoder(inputs)
+            c, c_local = self.encoder(inputs)
         else:
             # Return inputs?
-            c = torch.empty(inputs.size(0), 0).to(torch.device('cuda:0'))
-        if self.encoder_local is not None:
-            c_local = self.encoder_local(inputs)
-        else:
-            # Return inputs?
-            c_local = torch.empty(inputs.size(0), 0)
-
-
+            c, c_local = torch.empty(inputs.size(0), 0).to(torch.device('cuda:0'))
 
         return c, c_local
 

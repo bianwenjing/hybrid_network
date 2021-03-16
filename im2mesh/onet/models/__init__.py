@@ -74,11 +74,14 @@ class OccupancyNetwork(nn.Module):
         '''
         c = self.encode_inputs(inputs)
         q_z = self.infer_z(p, occ, c, **kwargs)
+
         z = q_z.rsample()
         p_r = self.decode(p, z, c, **kwargs)
 
         rec_error = -p_r.log_prob(occ).sum(dim=-1)
         kl = dist.kl_divergence(q_z, self.p0_z).sum(dim=-1)
+        # print('$$$$$$$$$$$', rec_error.shape, kl.shape) (10) (10)
+        # print('###########', p.shape) (10, 2048, 3)
         elbo = -rec_error - kl
 
         return elbo, rec_error, kl

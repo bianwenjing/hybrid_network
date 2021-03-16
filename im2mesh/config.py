@@ -1,9 +1,10 @@
 import yaml
 from torchvision import transforms
 from im2mesh import data
-from im2mesh import onet, r2n2, psgn, pix2mesh, dmc, combined, combined2, onet_2d, onet_2d_conv, onet_2d_2code, onet_1d, onet_2d_shared, onet_2d_cam, onet_2d_pointmap
+from im2mesh import onet, r2n2, psgn, pix2mesh, dmc, combined, combined2, onet_2d, onet_2d_conv, \
+    onet_2d_2code, onet_1d, onet_2d_shared, onet_2d_cam, onet_2d_pointmap, onet_2d_depth
 from im2mesh import preprocess
-
+from multiprocessing import Manager
 
 method_dict = {
     'onet': onet,
@@ -20,6 +21,7 @@ method_dict = {
     'shared_2code': onet_2d_shared,
     'onet_2d_cam': onet_2d_cam,
     'onet_2d_pointmap': onet_2d_pointmap,
+    'onet_2d_depth': onet_2d_depth,
 }
 
 
@@ -211,6 +213,79 @@ def get_dataset(mode, cfg, return_idx=False, return_category=False):
  
     return dataset
 
+def get_dataset_depth(mode ,cfg, return_idx=False, return_category=False,
+                **kwargs):
+    ''' Returns a dataset instance.
+
+    Args:
+        cfg (dict): config dictionary
+        mode (string): which mode is used (train / val /test / render)
+        return_idx (bool): whether to return model index
+        return_category (bool): whether to return model category
+    '''
+    # Get fields with cfg
+    method = cfg['method']
+    input_type = cfg['data']['input_type']
+    dataset_name = cfg['data']['dataset']
+    dataset_folder = cfg['data']['path']
+
+    categories = cfg['data']['classes']
+    cache_fields = cfg['data']['cache_fields']
+    n_views = cfg['data']['n_views']
+    split_model_for_images = cfg['data']['split_model_for_images']
+
+    splits = {
+        'train': cfg['data']['train_split'],
+        'val': cfg['data']['val_split'],
+        'test': cfg['data']['test_split'],
+        'render': cfg['data']['test_split'],
+    }
+    split = splits[mode]
+    fields = method_dict[method].config.get_data_fields(mode, cfg)
+
+    if input_type == 'idx':
+        input_field = data.IndexField()
+        fields['inputs'] = input_field
+    elif input_type == 'img':
+        random_view = True if \
+            (mode == 'train' or dataset_name == 'NMR') else False
+        resize_img_transform = data.ResizeImage(cfg['data']['img_size_input'])
+        fields['inputs'] = data.ImagesField_depth(
+            cfg['data']['img_folder_input'],
+            transform=resize_img_transform,
+            with_mask=False, with_camera=False,
+            extension=cfg['data']['img_extension_input'],
+            n_views=cfg['data']['n_views_input'], random_view=random_view)
+
+    else:
+        input_field = None
+
+    if return_idx:
+        fields['idx'] = data.IndexField()
+
+    if return_category:
+        fields['category'] = data.CategoryField()
+
+    manager = Manager()
+    shared_dict = manager.dict()
+
+    if ((dataset_name == 'Shapes3D') or
+        (dataset_name == 'DTU') or
+            (dataset_name == 'NMR')):
+        dataset = data.Shapes3dDataset_depth(
+            dataset_folder, fields, split=split,
+            categories=categories,
+            shared_dict=shared_dict,
+            n_views=n_views, cache_fields=cache_fields,
+            split_model_for_images=split_model_for_images)
+    elif dataset_name == 'images':
+        dataset = data.ImageDataset(
+            dataset_folder, return_idx=True
+        )
+    else:
+        raise ValueError('Invalid dataset_name!')
+
+    return dataset
 
 def get_inputs_field(mode, cfg):
     ''' Returns the inputs fields.

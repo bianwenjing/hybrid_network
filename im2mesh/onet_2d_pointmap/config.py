@@ -3,7 +3,7 @@ import torch.distributions as dist
 from torch import nn
 import os
 from im2mesh.encoder import encoder_dict
-from im2mesh.onet_2d_shared import models, training, generation
+from im2mesh.onet_2d_pointmap import models, training, generation
 from im2mesh import data
 from im2mesh import config
 
